@@ -1,3 +1,4 @@
+import { ReactNode } from 'react'
 import {
   useReactTable,
   getCoreRowModel,
@@ -24,6 +25,18 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react'
 import { Customer } from '@/api/customerApi'
+
+function highlight(text: string | null | undefined, term: string | undefined): ReactNode {
+  if (!term || !text) return text ?? '—'
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
+  if (parts.length === 1) return text
+  return parts.map((part, i) =>
+    part.toLowerCase() === term.toLowerCase()
+      ? <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-sm not-italic">{part}</mark>
+      : part
+  )
+}
 
 function SkeletonRows() {
   return (
@@ -62,14 +75,26 @@ interface Props {
   perPage: number
   onPageChange: (p: number) => void
   onPerPageChange: (pp: number) => void
+  hasSearch: boolean
+  isLastViewed: boolean
+  mode: 'simple' | 'multi'
+  searchTerm?: string
+  searchFields?: string[]
+  activeFilters?: Record<string, string>
 }
 
 export function CustomerTable({
   data, meta, loading, selectedId,
   onRowClick, onOrdersClick,
   page, perPage, onPageChange, onPerPageChange,
+  hasSearch, isLastViewed, mode, searchTerm, searchFields, activeFilters,
 }: Props) {
   const col = createColumnHelper<Customer>()
+
+  function termFor(field: string): string | undefined {
+    if (mode === 'simple') return searchFields?.includes(field) ? searchTerm : undefined
+    return activeFilters?.[field]
+  }
 
   const columns = [
     col.display({
@@ -87,7 +112,7 @@ export function CustomerTable({
             <TooltipContent side="right">View orders</TooltipContent>
           </Tooltip>
           <span className="font-mono text-sm font-semibold tabular-nums">
-            {row.original.customer_no}
+            {highlight(String(row.original.customer_no), termFor('customer_no'))}
           </span>
         </div>
       ),
@@ -98,39 +123,47 @@ export function CustomerTable({
       cell: ({ row }) => (
         <div>
           <div className="font-semibold text-sm">
-            {row.original.first_name} {row.original.last_name}
+            {highlight(row.original.first_name, termFor('name'))}{' '}
+            {highlight(row.original.last_name, termFor('name'))}
           </div>
-          <div className="text-xs text-muted-foreground">{row.original.email}</div>
+          <div className="text-xs text-muted-foreground">
+            {highlight(row.original.email, termFor('email'))}
+          </div>
         </div>
       ),
     }),
     col.accessor('pers_nr', {
       header: 'SSN',
       cell: info => (
-        <span className="text-sm font-mono text-muted-foreground">{info.getValue() || '—'}</span>
+        <span className="text-sm font-mono text-muted-foreground">
+          {highlight(info.getValue(), termFor('pers_nr'))}
+        </span>
       ),
     }),
     col.accessor('tel', {
       header: 'Phone',
-      cell: info => <span className="text-sm">{info.getValue() || '—'}</span>,
+      cell: info => (
+        <span className="text-sm">{highlight(info.getValue(), termFor('tel'))}</span>
+      ),
     }),
     col.accessor('adress', {
       header: 'Address',
-      cell: info => <span className="text-sm">{info.getValue() || '—'}</span>,
+      cell: info => (
+        <span className="text-sm">{highlight(info.getValue(), termFor('adress'))}</span>
+      ),
     }),
     col.accessor('ort', {
       header: 'City',
       cell: info => <span className="text-sm">{info.getValue() || '—'}</span>,
     }),
-    col.accessor('trial_sinfrid', {
-      header: 'Sinfrid',
-      cell: info => info.getValue() ? (
-        <span className="inline-flex items-center rounded-full bg-violet-50 border border-violet-200 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
-          Sinfrid
-        </span>
-      ) : (
-        <span className="text-muted-foreground/40 text-sm">—</span>
-      ),
+    col.accessor('sinfrid_id', {
+      header: 'Sinfrid ID',
+      cell: info => {
+        const val = info.getValue()
+        return val
+          ? <span className="font-mono text-xs text-violet-700">{highlight(val, termFor('sinfrid_id'))}</span>
+          : <span className="text-muted-foreground/40 text-sm">—</span>
+      },
     }),
     col.accessor('last_order_date', {
       header: 'Last Order',
@@ -175,7 +208,7 @@ export function CustomerTable({
               <TableRow>
                 <TableCell colSpan={8} className="h-48 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                    <span className="text-3xl">🔍</span>
+                    <span className="text-3xl">😶</span>
                     <p className="font-medium">No customers found</p>
                     <p className="text-sm">Try adjusting your search or filter</p>
                   </div>
@@ -208,7 +241,11 @@ export function CustomerTable({
       <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
         <span>
           {meta && meta.total > 0
-            ? `Showing ${start.toLocaleString()} – ${end.toLocaleString()} of ${meta.total.toLocaleString()} customers`
+            ? isLastViewed
+              ? `${meta.total.toLocaleString()} recently viewed`
+              : hasSearch
+                ? `Showing ${start.toLocaleString()} – ${end.toLocaleString()} of ${meta.total.toLocaleString()} results`
+                : `Showing ${start.toLocaleString()} – ${end.toLocaleString()} of ${meta.total.toLocaleString()} customers`
             : 'No customers'}
         </span>
         <div className="flex items-center gap-3">

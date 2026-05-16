@@ -21,9 +21,11 @@ class ListCustomerRequest extends FormRequest
             'search'    => ['nullable', 'string', 'max:255'],
             'field'     => ['nullable', 'string', 'in:name,customer_no,email,tel,pers_nr,adress,alternative_email'],
             'fields'    => ['nullable', 'array'],
-            'fields.*'  => ['nullable', 'string', 'in:name,customer_no,email,tel,pers_nr,adress,alternative_email'],
+            'fields.*'  => ['nullable', 'string', 'in:name,customer_no,order_no,email,tel,pers_nr,adress,sinfrid_id,alternative_email'],
             'filters'   => ['nullable', 'array'],
             'filters.*' => ['nullable', 'string', 'max:255'],
+            'ids'       => ['nullable', 'array', 'max:50'],
+            'ids.*'     => ['nullable', 'integer', 'min:1'],
             'per_page'  => ['nullable', 'integer', 'in:50,100,200,500'],
             'page'      => ['nullable', 'integer', 'min:1'],
         ];

@@ -12,6 +12,8 @@ export default function Customers() {
     simple, updateSimple, clearSimple,
     chips, updateChip, removeChip, addChip, reorderChips,
     availableToAdd,
+    trackView,
+    hasSearch, isLastViewed, activeFilters,
     page, setPage,
     perPage, setPerPage,
     data, loading,
@@ -24,6 +26,7 @@ export default function Customers() {
   const [ordersOpen, setOrdersOpen] = useState(false)
 
   function handleRowClick(customer: Customer) {
+    trackView(customer.id)
     setSelectedCustomer(customer)
     setDetailOpen(true)
   }
@@ -63,6 +66,12 @@ export default function Customers() {
           perPage={perPage}
           onPageChange={setPage}
           onPerPageChange={setPerPage}
+          hasSearch={hasSearch}
+          isLastViewed={isLastViewed}
+          mode={mode}
+          searchTerm={mode === 'simple' ? simple.term : undefined}
+          searchFields={mode === 'simple' ? simple.fields : undefined}
+          activeFilters={mode === 'multi' ? activeFilters : undefined}
         />
       </div>
 

@@ -16,6 +16,7 @@ class CustomerRepository implements CustomerRepositoryInterface
     {
         $perPage = (int) ($params['per_page'] ?? 50);
         $page    = (int) ($params['page'] ?? 1);
+        $ids     = array_values(array_filter(array_map('intval', $params['ids'] ?? [])));
         $filters = $params['filters'] ?? [];
         $search  = trim($params['search'] ?? '');
         $field   = $params['field'] ?? '';
@@ -32,32 +33,62 @@ class CustomerRepository implements CustomerRepositoryInterface
                 'cp.pers_nr',
                 'cp.adress',
                 'cp.ort',
-                'cpe.trial_sinfrid',
+                DB::raw('(SELECT sa.id FROM sinfrid_accounts sa WHERE sa.customer_id = cp.to_user AND sa.deleted_at IS NULL LIMIT 1) as sinfrid_id'),
                 DB::raw('(SELECT MAX(o.date_added) FROM orders o WHERE o.by_user = cp.to_user) as last_order_date'),
             ]);
 
-        // Multi-mode filters take priority
-        if (!empty($filters)) {
-            foreach ($filters as $filterField => $value) {
-                $value = trim((string) $value);
-                if ($value === '') {
-                    continue;
+        if (!empty($ids)) {
+            $idsString = implode(',', $ids);
+            $query->whereIn('cp.to_user', $ids)
+                  ->orderByRaw("FIELD(cp.to_user, {$idsString})");
+        } else {
+            $nameTerm = null;
+
+            // Multi-mode filters take priority
+            if (!empty($filters)) {
+                foreach ($filters as $filterField => $value) {
+                    $value = trim((string) $value);
+                    if ($value === '') {
+                        continue;
+                    }
+                    $this->applyFilter($query, $filterField, $value);
                 }
-                $this->applyFilter($query, $filterField, $value);
+                if (!empty($filters['name'])) {
+                    $nameTerm = trim($filters['name']);
+                }
+            } elseif ($search !== '' && !empty($fields)) {
+                $query->where(function ($q) use ($fields, $search) {
+                    foreach ($fields as $f) {
+                        $this->applyOrFilter($q, $f, $search);
+                    }
+                });
+                if (in_array('name', (array) $fields)) {
+                    $nameTerm = $search;
+                }
+            } elseif ($search !== '' && $field !== '') {
+                $this->applyFilter($query, $field, $search);
+                if ($field === 'name') {
+                    $nameTerm = $search;
+                }
             }
-        } elseif ($search !== '' && !empty($fields)) {
-            $query->where(function ($q) use ($fields, $search) {
-                foreach ($fields as $f) {
-                    $this->applyOrFilter($q, $f, $search);
-                }
-            });
-        } elseif ($search !== '' && $field !== '') {
-            $this->applyFilter($query, $field, $search);
+
+            if ($nameTerm !== null) {
+                $query->orderByRaw(
+                    "CASE
+                        WHEN cp.first_name LIKE ? THEN 1
+                        WHEN cp.first_name LIKE ? THEN 2
+                        WHEN cp.last_name  LIKE ? THEN 3
+                        WHEN cp.last_name  LIKE ? THEN 4
+                        ELSE 5
+                    END ASC",
+                    ["{$nameTerm}%", "%{$nameTerm}%", "{$nameTerm}%", "%{$nameTerm}%"]
+                );
+            }
+
+            $query->orderBy('cp.to_user', 'desc');
         }
 
-        return $query
-            ->orderBy('cp.to_user', 'desc')
-            ->paginate($perPage, ['*'], 'page', $page);
+        return $query->paginate($perPage, ['*'], 'page', $page);
     }
 
     public function findById(int $id): ?array
@@ -130,6 +161,20 @@ class CustomerRepository implements CustomerRepositoryInterface
             'tel'              => $query->where('cp.tel', 'LIKE', "%{$value}%"),
             'pers_nr'          => $query->where('cp.pers_nr', 'LIKE', "%{$value}%"),
             'customer_no'      => $query->where('cp.to_user', 'LIKE', "%{$value}%"),
+            'order_no'         => $query->whereExists(function ($sub) use ($value) {
+                $sub->from('orders')
+                    ->whereColumn('by_user', 'cp.to_user')
+                    ->where(function ($q) use ($value) {
+                        $q->where('id', $value)
+                          ->orWhere('ref', 'LIKE', "%{$value}%");
+                    });
+            }),
+            'sinfrid_id'       => $query->whereExists(function ($sub) use ($value) {
+                $sub->from('sinfrid_accounts as sa')
+                    ->whereColumn('sa.customer_id', 'cp.to_user')
+                    ->where('sa.id', $value)
+                    ->whereNull('sa.deleted_at');
+            }),
             default            => null,
         };
     }
@@ -148,6 +193,20 @@ class CustomerRepository implements CustomerRepositoryInterface
             'tel'              => $query->orWhere('cp.tel', 'LIKE', "%{$value}%"),
             'pers_nr'          => $query->orWhere('cp.pers_nr', 'LIKE', "%{$value}%"),
             'customer_no'      => $query->orWhere('cp.to_user', 'LIKE', "%{$value}%"),
+            'order_no'         => $query->orWhereExists(function ($sub) use ($value) {
+                $sub->from('orders')
+                    ->whereColumn('by_user', 'cp.to_user')
+                    ->where(function ($q) use ($value) {
+                        $q->where('id', $value)
+                          ->orWhere('ref', 'LIKE', "%{$value}%");
+                    });
+            }),
+            'sinfrid_id'       => $query->orWhereExists(function ($sub) use ($value) {
+                $sub->from('sinfrid_accounts as sa')
+                    ->whereColumn('sa.customer_id', 'cp.to_user')
+                    ->where('sa.id', $value)
+                    ->whereNull('sa.deleted_at');
+            }),
             default            => null,
         };
     }

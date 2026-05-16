@@ -153,16 +153,14 @@ export function CustomerSheet({ customer, open, onClose }: Props) {
         {/* ── Header ── */}
         <div className="border-b border-border px-5 py-5 shrink-0 bg-gradient-to-b from-muted/40 to-background">
           <SheetHeader>
-            <SheetTitle asChild>
-              <div className="flex items-center gap-4">
-                <Avatar name={fullName || '?'} />
-                <div className="min-w-0">
-                  <p className="text-xl font-bold leading-tight truncate">{fullName}</p>
-                  <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-                    <Hash className="h-3.5 w-3.5" />
-                    <span className="font-semibold text-foreground/70">{customer?.customer_no}</span>
-                  </p>
-                </div>
+            <SheetTitle render={<div className="flex items-center gap-4" />}>
+              <Avatar name={fullName || '?'} />
+              <div className="min-w-0">
+                <p className="text-xl font-bold leading-tight truncate">{fullName}</p>
+                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
+                  <Hash className="h-3.5 w-3.5" />
+                  <span className="font-semibold text-foreground/70">{customer?.customer_no}</span>
+                </p>
               </div>
             </SheetTitle>
           </SheetHeader>

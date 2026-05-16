@@ -3,6 +3,10 @@ import { Customer, ListCustomerParams, PaginatedResponse, getCustomers } from '@
 
 const STORAGE_KEY_MODE = 'customerSearchMode'
 const STORAGE_KEY_FILTERS = 'customerFilterSearch'
+const STORAGE_KEY_LAST_VIEWED = 'customerLastViewed'
+const STORAGE_KEY_VERSION = 'customerChipsVersion'
+const CHIPS_VERSION = '2'
+const MAX_LAST_VIEWED = 50
 
 type SearchMode = 'simple' | 'multi'
 
@@ -17,18 +21,19 @@ interface ChipFilter {
   value: string
 }
 
-const DEFAULT_CHIPS: ChipFilter[] = [
-  { key: 'customer_no', label: 'Customer No.', value: '' },
-  { key: 'pers_nr',     label: 'SSN',          value: '' },
-  { key: 'name',        label: 'Name',          value: '' },
-  { key: 'tel',         label: 'Phone',         value: '' },
-  { key: 'email',       label: 'Email',         value: '' },
+const ALL_CHIP_DEFS: Omit<ChipFilter, 'value'>[] = [
+  { key: 'customer_no',       label: 'Customer No.'      },
+  { key: 'order_no',          label: 'Order No.'         },
+  { key: 'name',              label: 'Name'              },
+  { key: 'tel',               label: 'Telephone'         },
+  { key: 'email',             label: 'Email'             },
+  { key: 'pers_nr',           label: 'SSN'               },
+  { key: 'adress',            label: 'Address'           },
+  { key: 'sinfrid_id',        label: 'Sinfrid ID'        },
+  { key: 'alternative_email', label: 'Alternative Email' },
 ]
 
-const EXTRA_CHIPS: ChipFilter[] = [
-  { key: 'adress',            label: 'Address',           value: '' },
-  { key: 'alternative_email', label: 'Alternative Email', value: '' },
-]
+const DEFAULT_CHIPS: ChipFilter[] = ALL_CHIP_DEFS.map(c => ({ ...c, value: '' }))
 
 function loadMode(): SearchMode {
   return (localStorage.getItem(STORAGE_KEY_MODE) as SearchMode) || 'simple'
@@ -36,16 +41,31 @@ function loadMode(): SearchMode {
 
 function loadChips(): ChipFilter[] {
   try {
+    if (localStorage.getItem(STORAGE_KEY_VERSION) !== CHIPS_VERSION) {
+      localStorage.setItem(STORAGE_KEY_VERSION, CHIPS_VERSION)
+      localStorage.removeItem(STORAGE_KEY_FILTERS)
+      return DEFAULT_CHIPS
+    }
     const raw = localStorage.getItem(STORAGE_KEY_FILTERS)
     if (raw) return JSON.parse(raw)
   } catch {}
   return DEFAULT_CHIPS
 }
 
+function loadLastViewedIds(): number[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LAST_VIEWED)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return []
+}
+
 export function useCustomers() {
   const [mode, setMode] = useState<SearchMode>(loadMode)
-  const [simple, setSimple] = useState<SimpleSearch>({ fields: ['name'], term: '' })
+  const [simple, setSimple] = useState<SimpleSearch>({ fields: ['name', 'customer_no', 'order_no', 'tel'], term: '' })
   const [chips, setChips] = useState<ChipFilter[]>(loadChips)
+  const [lastViewedIds] = useState<number[]>(loadLastViewedIds)
+  const lastViewedIdsRef = useRef(lastViewedIds)
 
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(50)
@@ -68,7 +88,7 @@ export function useCustomers() {
   }, [])
 
   const clearSimple = useCallback(() => {
-    setSimple({ fields: ['name'], term: '' })
+    setSimple({ fields: ['name', 'customer_no', 'order_no', 'tel'], term: '' })
     setPage(1)
   }, [])
 
@@ -103,11 +123,31 @@ export function useCustomers() {
     localStorage.setItem(STORAGE_KEY_FILTERS, JSON.stringify(newOrder))
   }, [])
 
-  const availableToAdd = EXTRA_CHIPS.filter(e => !chips.some(c => c.key === e.key))
+  const availableToAdd = ALL_CHIP_DEFS.filter(e => !chips.some(c => c.key === e.key))
+
+  const trackView = useCallback((id: number) => {
+    const next = [id, ...lastViewedIdsRef.current.filter(i => i !== id)].slice(0, MAX_LAST_VIEWED)
+    lastViewedIdsRef.current = next
+    localStorage.setItem(STORAGE_KEY_LAST_VIEWED, JSON.stringify(next))
+  }, [])
+
+  const hasSearch = mode === 'simple'
+    ? simple.term.trim().length > 0 && simple.fields.length > 0
+    : chips.some(c => c.value.trim().length > 0)
+
+  // Show recently viewed when idle and the user has history; otherwise show the default full list
+  const isLastViewed = !hasSearch && lastViewedIds.length > 0
+
+  const activeFilters: Record<string, string> = {}
+  if (mode === 'multi') {
+    chips.forEach(c => { if (c.value.trim()) activeFilters[c.key] = c.value.trim() })
+  }
 
   // Fetch with debounce
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
+
+    const delay = hasSearch ? 300 : 0
 
     debounceRef.current = setTimeout(async () => {
       setLoading(true)
@@ -115,18 +155,17 @@ export function useCustomers() {
 
       const params: ListCustomerParams = { page, per_page: perPage }
 
-      if (mode === 'simple') {
-        if (simple.term && simple.fields.length > 0) {
+      if (isLastViewed) {
+        params.ids = lastViewedIds
+      } else if (hasSearch) {
+        if (mode === 'simple') {
           params.search = simple.term
           params.fields = simple.fields
+        } else {
+          if (Object.keys(activeFilters).length > 0) params.filters = activeFilters
         }
-      } else {
-        const filters: Record<string, string> = {}
-        chips.forEach(c => {
-          if (c.value.trim()) filters[c.key] = c.value.trim()
-        })
-        if (Object.keys(filters).length > 0) params.filters = filters
       }
+      // else: no search, no history → fetch all (default list)
 
       try {
         const [result] = await Promise.all([
@@ -139,18 +178,22 @@ export function useCustomers() {
       } finally {
         setLoading(false)
       }
-    }, 300)
+    }, delay)
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [mode, simple, chips, page, perPage])
+  }, [mode, simple, chips, page, perPage, hasSearch, isLastViewed])
 
   return {
     mode, switchMode,
     simple, updateSimple, clearSimple,
     chips, updateChip, removeChip, addChip, reorderChips,
     availableToAdd,
+    trackView,
+    hasSearch,
+    isLastViewed,
+    activeFilters,
     page, setPage,
     perPage, setPerPage,
     data, loading, error,

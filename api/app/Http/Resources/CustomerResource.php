@@ -24,7 +24,7 @@ class CustomerResource extends JsonResource
             'adress'          => $this->adress,
             'ort'             => $this->ort,
             'last_order_date' => $this->last_order_date,
-            'trial_sinfrid'   => (bool) $this->trial_sinfrid,
+            'sinfrid_id'      => $this->sinfrid_id,
         ];
     }
 }

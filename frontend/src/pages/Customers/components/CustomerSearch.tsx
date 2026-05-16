@@ -31,19 +31,27 @@ import {
 } from '@/components/ui/tooltip'
 
 const SIMPLE_FIELDS = [
-  { value: 'name',        label: 'Name' },
-  { value: 'customer_no', label: 'Customer No.' },
-  { value: 'email',       label: 'Email' },
-  { value: 'tel',         label: 'Phone' },
-  { value: 'pers_nr',     label: 'SSN' },
+  { value: 'name',              label: 'Name'              },
+  { value: 'customer_no',       label: 'Customer No.'      },
+  { value: 'order_no',          label: 'Order No.'         },
+  { value: 'tel',               label: 'Telephone'         },
+  { value: 'pers_nr',           label: 'SSN'               },
+  { value: 'email',             label: 'Email'             },
+  { value: 'adress',            label: 'Address'           },
+  { value: 'sinfrid_id',        label: 'Sinfrid ID'        },
+  { value: 'alternative_email', label: 'Alternative Email' },
 ]
 
 const PLACEHOLDERS: Record<string, string> = {
-  name:        'name',
-  customer_no: 'customer no.',
-  email:       'email',
-  tel:         'phone',
-  pers_nr:     'SSN',
+  name:              'name',
+  customer_no:       'customer no.',
+  order_no:          'order no.',
+  tel:               'telephone',
+  pers_nr:           'SSN',
+  email:             'email',
+  adress:            'address',
+  sinfrid_id:        'sinfrid ID',
+  alternative_email: 'alternative email',
 }
 
 interface ChipFilter {

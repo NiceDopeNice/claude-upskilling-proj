@@ -11,7 +11,7 @@ export interface Customer {
   adress: string
   ort: string
   last_order_date: string | null
-  trial_sinfrid: boolean
+  sinfrid_id: string | null
 }
 
 export interface CustomerDetail {
@@ -68,6 +68,7 @@ export interface ListCustomerParams {
   field?: string
   fields?: string[]
   filters?: Record<string, string>
+  ids?: number[]
   per_page?: number
   page?: number
 }
@@ -79,6 +80,9 @@ export function getCustomers(params: ListCustomerParams): Promise<PaginatedRespo
   if (params.field) query.set('field', params.field)
   if (params.fields && params.fields.length > 0) {
     params.fields.forEach(f => query.append('fields[]', f))
+  }
+  if (params.ids && params.ids.length > 0) {
+    params.ids.forEach(id => query.append('ids[]', String(id)))
   }
   if (params.per_page) query.set('per_page', String(params.per_page))
   if (params.page) query.set('page', String(params.page))
