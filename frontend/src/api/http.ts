@@ -1,6 +1,8 @@
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
-const BASE_URL = '/api'
+const BASE_URL = import.meta.env.DEV
+  ? '/api'
+  : `${import.meta.env.VITE_RAILWAY_API_URL}/api`
 
 async function request<T = unknown>(
   method: HttpMethod,

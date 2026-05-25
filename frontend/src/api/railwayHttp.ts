@@ -1,8 +1,8 @@
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
-// In dev use the Vite proxy (avoids CORS); in prod use the full Railway URL
+// In dev use the local backend proxy; in prod use the full Railway URL
 const RAILWAY_BASE = import.meta.env.DEV
-  ? '/railway-api'
+  ? '/api'
   : `${import.meta.env.VITE_RAILWAY_API_URL}/api`
 
 async function request<T = unknown>(
