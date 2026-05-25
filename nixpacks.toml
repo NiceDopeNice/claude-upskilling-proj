@@ -1,4 +1,3 @@
-# v2 - config:cache moved to runtime startCommand for correct env var handling
 [phases.setup]
 nixPkgs = [
   "php83",
@@ -8,12 +7,14 @@ nixPkgs = [
   "php83Extensions.curl",
   "php83Extensions.zip",
   "php83Extensions.tokenizer",
+  "php83Extensions.fileinfo",
   "php83Packages.composer"
 ]
 
 [phases.build]
 cmds = [
   "cd api && composer install --no-dev --optimize-autoloader",
+  "cd api && php artisan config:cache",
   "cd api && php artisan route:cache"
 ]
 
