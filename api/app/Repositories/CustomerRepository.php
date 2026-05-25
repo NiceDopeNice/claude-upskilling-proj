@@ -35,7 +35,7 @@ class CustomerRepository implements CustomerRepositoryInterface
                 'cp.pers_nr',
                 'cp.adress',
                 'cp.ort',
-                DB::raw('(SELECT sa.id FROM sinfrid_accounts sa WHERE sa.customer_id = cp.to_user AND sa.deleted_at IS NULL LIMIT 1) as sinfrid_id'),
+                DB::raw('NULL as sinfrid_id'),
                 DB::raw('(SELECT MAX(o.date_added) FROM orders o WHERE o.by_user = cp.to_user) as last_order_date'),
             ]);
 
@@ -117,7 +117,7 @@ class CustomerRepository implements CustomerRepositoryInterface
                 'cpe.block_email',
                 'cpe.block_gdpr',
                 'cpe.block_dm',
-                DB::raw('COALESCE((SELECT SUM(css.LTV) FROM cache_subscription_stats css WHERE css.user_id = cp.to_user), 0) as ltv'),
+                DB::raw('0 as ltv'),
                 DB::raw('(SELECT COUNT(*) FROM orders o WHERE o.by_user = cp.to_user) as order_count'),
                 DB::raw('(SELECT MAX(o.date_added) FROM orders o WHERE o.by_user = cp.to_user) as last_order_date'),
             ])
@@ -194,12 +194,7 @@ class CustomerRepository implements CustomerRepositoryInterface
                           ->orWhere('ref', 'LIKE', "%{$value}%");
                     });
             }),
-            'sinfrid_id'       => $query->whereExists(function ($sub) use ($value) {
-                $sub->from('sinfrid_accounts as sa')
-                    ->whereColumn('sa.customer_id', 'cp.to_user')
-                    ->where('sa.id', $value)
-                    ->whereNull('sa.deleted_at');
-            }),
+            'sinfrid_id'       => $query->whereRaw('0 = 1'),
             default            => null,
         };
     }
@@ -226,12 +221,7 @@ class CustomerRepository implements CustomerRepositoryInterface
                           ->orWhere('ref', 'LIKE', "%{$value}%");
                     });
             }),
-            'sinfrid_id'       => $query->orWhereExists(function ($sub) use ($value) {
-                $sub->from('sinfrid_accounts as sa')
-                    ->whereColumn('sa.customer_id', 'cp.to_user')
-                    ->where('sa.id', $value)
-                    ->whereNull('sa.deleted_at');
-            }),
+            'sinfrid_id'       => null,
             default            => null,
         };
     }
