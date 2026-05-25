@@ -20,6 +20,7 @@ class CustomerProfile extends Model
         'to_user', 'first_name', 'last_name', 'email', 'alternative_email',
         'tel', 'alternative_tel', 'pers_nr', 'adress', 'post_nr', 'ort',
         'region_code', 'do_not_call', 'difficult_customer', 'blocked_fees',
+        'organization_id',
     ];
 
     protected $casts = [
