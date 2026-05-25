@@ -13,7 +13,6 @@ nixPkgs = [
 [phases.build]
 cmds = [
   "cd api && composer install --no-dev --optimize-autoloader",
-  "cd api && php artisan config:cache",
   "cd api && php artisan route:cache"
 ]
 
