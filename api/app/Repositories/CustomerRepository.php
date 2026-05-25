@@ -7,6 +7,8 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\CustomerRepositoryInterface;
+use App\Models\CustomerProfile;
+use App\Models\CustomerProfileExtra;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -123,6 +125,29 @@ class CustomerRepository implements CustomerRepositoryInterface
             ->first();
 
         return $row ? (array) $row : null;
+    }
+
+    public function update(int $id, array $data): bool
+    {
+        $profile = CustomerProfile::where('to_user', $id)->first();
+        if (!$profile) return false;
+
+        $profileFields = [
+            'first_name', 'last_name', 'email', 'alternative_email',
+            'tel', 'alternative_tel', 'pers_nr', 'adress', 'post_nr',
+            'ort', 'region_code', 'do_not_call', 'difficult_customer',
+        ];
+        $profileData = array_intersect_key($data, array_flip($profileFields));
+        if (!empty($profileData)) {
+            $profile->update($profileData);
+        }
+
+        $extrasData = array_intersect_key($data, array_flip(['block_email', 'block_gdpr', 'block_dm']));
+        if (!empty($extrasData)) {
+            CustomerProfileExtra::updateOrCreate(['customer_id' => $id], $extrasData);
+        }
+
+        return true;
     }
 
     public function getOrders(int $customerId, int $perPage, int $page): LengthAwarePaginator

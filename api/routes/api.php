@@ -8,5 +8,6 @@ Route::get('/ping', fn () => response()->json(['message' => 'Laravel API is runn
 Route::prefix('customers')->group(function () {
     Route::get('/', [CustomerController::class, 'index']);
     Route::get('/{id}', [CustomerController::class, 'show'])->where('id', '[0-9]+');
+    Route::put('/{id}', [CustomerController::class, 'update'])->where('id', '[0-9]+');
     Route::get('/{id}/orders', [CustomerController::class, 'orders'])->where('id', '[0-9]+');
 });

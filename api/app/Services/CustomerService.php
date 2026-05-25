@@ -26,6 +26,11 @@ class CustomerService implements CustomerServiceInterface
         return $this->repository->findById($id);
     }
 
+    public function update(int $id, array $data): bool
+    {
+        return $this->repository->update($id, $data);
+    }
+
     public function orders(int $customerId, int $perPage, int $page): LengthAwarePaginator
     {
         return $this->repository->getOrders($customerId, $perPage, $page);

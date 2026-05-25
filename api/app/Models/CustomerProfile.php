@@ -18,8 +18,8 @@ class CustomerProfile extends Model
 
     protected $fillable = [
         'to_user', 'first_name', 'last_name', 'email', 'alternative_email',
-        'tel', 'pers_nr', 'adress', 'ort', 'region_code',
-        'do_not_call', 'difficult_customer', 'blocked_fees',
+        'tel', 'alternative_tel', 'pers_nr', 'adress', 'post_nr', 'ort',
+        'region_code', 'do_not_call', 'difficult_customer', 'blocked_fees',
     ];
 
     protected $casts = [

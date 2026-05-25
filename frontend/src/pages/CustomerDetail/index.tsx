@@ -1,74 +1,46 @@
 import { useEffect, useState } from 'react'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import { Skeleton } from '@/components/ui/skeleton'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
-  PhoneOff,
-  AlertOctagon,
-  Ban,
-  MailX,
-  ShieldOff,
-  ShieldAlert,
-  CheckCircle2,
-  XCircle,
-  Hash,
-  Pencil,
-  X,
-  Save,
+  ArrowLeft, Pencil, Save, X,
+  PhoneOff, AlertOctagon, Ban, MailX, ShieldOff, ShieldAlert,
+  CheckCircle2, XCircle, Hash,
 } from 'lucide-react'
-import {
-  Customer,
-  CustomerDetail,
-  UpdateCustomerPayload,
-  getCustomer,
-  updateCustomer,
-} from '@/api/customerApi'
+import { CustomerDetail, UpdateCustomerPayload } from '@/api/customerApi'
+import { getRailwayCustomer, updateRailwayCustomer } from '@/api/railwayCustomerApi'
 
 /* ── helpers ── */
 
 function Avatar({ name }: { name: string }) {
-  const initials = name
-    .split(' ')
-    .slice(0, 2)
-    .map(n => n[0])
-    .join('')
-    .toUpperCase()
+  const initials = name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
   return (
-    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
-      <span className="text-base font-bold text-primary">{initials}</span>
+    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
+      <span className="text-xl font-bold text-primary">{initials}</span>
     </div>
   )
 }
 
 function SectionHeading({ title }: { title: string }) {
   return (
-    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60 pt-3 pb-1">
+    <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60 pt-5 pb-2">
       {title}
-    </p>
+    </h2>
   )
 }
 
 function FieldGrid({ rows }: { rows: { label: string; value: React.ReactNode; mono?: boolean }[] }) {
   const visible = rows.filter(r => r.value !== null && r.value !== undefined && r.value !== '')
-  if (visible.length === 0) return null
+  if (!visible.length) return null
   return (
     <div className="rounded-lg border border-border overflow-hidden">
       <table className="w-full text-sm">
         <tbody className="divide-y divide-border/50">
           {visible.map(row => (
             <tr key={row.label} className="hover:bg-muted/20 transition-colors">
-              <td className="px-3 py-1.5 text-[11px] text-muted-foreground whitespace-nowrap w-28 align-top pt-2">
-                {row.label}
-              </td>
-              <td className={`px-3 py-1.5 text-xs font-medium break-all ${row.mono ? 'font-mono' : ''}`}>
-                {row.value}
-              </td>
+              <td className="px-4 py-2 text-[11px] text-muted-foreground whitespace-nowrap w-36">{row.label}</td>
+              <td className={`px-4 py-2 text-sm font-medium break-all ${row.mono ? 'font-mono' : ''}`}>{row.value}</td>
             </tr>
           ))}
         </tbody>
@@ -77,122 +49,66 @@ function FieldGrid({ rows }: { rows: { label: string; value: React.ReactNode; mo
   )
 }
 
-interface FlagItem {
-  icon: React.ElementType
-  label: string
-  active: boolean
-  activeColor: string
-}
-
-function FlagChip({ icon: Icon, label, active, activeColor }: FlagItem) {
+function FlagChip({ icon: Icon, label, active, activeColor }: {
+  icon: React.ElementType; label: string; active: boolean; activeColor: string
+}) {
   return (
-    <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium border transition-colors ${
-      active
-        ? `${activeColor} border-current/20`
-        : 'text-muted-foreground/50 border-border bg-transparent'
+    <div className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium border transition-colors ${
+      active ? `${activeColor} border-current/20` : 'text-muted-foreground/50 border-border'
     }`}>
-      {active
-        ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-        : <XCircle className="h-3.5 w-3.5 shrink-0" />
-      }
+      {active ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <XCircle className="h-3.5 w-3.5 shrink-0" />}
       <Icon className="h-3.5 w-3.5 shrink-0" />
       {label}
     </div>
   )
 }
 
-function FlagToggle({
-  icon: Icon,
-  label,
-  active,
-  activeColor,
-  onChange,
-}: FlagItem & { onChange: (val: boolean) => void }) {
+function FlagToggle({ icon: Icon, label, active, activeColor, onChange }: {
+  icon: React.ElementType; label: string; active: boolean; activeColor: string; onChange: (v: boolean) => void
+}) {
   return (
     <button
       type="button"
       onClick={() => onChange(!active)}
-      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-medium border transition-colors cursor-pointer ${
-        active
-          ? `${activeColor} border-current/20`
-          : 'text-muted-foreground/50 border-border bg-transparent hover:bg-muted/30'
+      className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium border transition-colors cursor-pointer ${
+        active ? `${activeColor} border-current/20` : 'text-muted-foreground/50 border-border hover:bg-muted/30'
       }`}
     >
-      {active
-        ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-        : <XCircle className="h-3.5 w-3.5 shrink-0" />
-      }
+      {active ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" /> : <XCircle className="h-3.5 w-3.5 shrink-0" />}
       <Icon className="h-3.5 w-3.5 shrink-0" />
       {label}
     </button>
   )
 }
 
-function EditField({
-  label,
-  value,
-  onChange,
-  mono,
-}: {
-  label: string
-  value: string
-  onChange: (v: string) => void
-  mono?: boolean
+function EditField({ label, value, onChange, mono }: {
+  label: string; value: string; onChange: (v: string) => void; mono?: boolean
 }) {
   return (
-    <div className="grid grid-cols-[7rem_1fr] items-center gap-2">
-      <span className="text-[11px] text-muted-foreground">{label}</span>
+    <div className="grid grid-cols-[9rem_1fr] items-center gap-3">
+      <span className="text-sm text-muted-foreground">{label}</span>
       <Input
         value={value}
         onChange={e => onChange(e.target.value)}
-        className={`h-7 text-xs ${mono ? 'font-mono' : ''}`}
+        className={`h-8 text-sm ${mono ? 'font-mono' : ''}`}
       />
     </div>
   )
 }
 
-function LoadingSkeleton() {
-  return (
-    <div className="px-5 py-4 space-y-3">
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-9 w-9 rounded-xl" />
-        <div className="space-y-1.5">
-          <Skeleton className="h-4 w-36" />
-          <Skeleton className="h-3 w-20" />
-        </div>
-      </div>
-      <Skeleton className="h-3 w-16 mt-4" />
-      <Skeleton className="h-32 w-full rounded-lg" />
-      <Skeleton className="h-3 w-16" />
-      <Skeleton className="h-20 w-full rounded-lg" />
-      <Skeleton className="h-3 w-16" />
-      <Skeleton className="h-24 w-full rounded-lg" />
-    </div>
-  )
-}
-
-/* ── edit form state ── */
+/* ── form state ── */
 
 type EditForm = {
-  first_name: string
-  last_name: string
-  email: string
-  alternative_email: string
-  tel: string
-  alternative_tel: string
-  pers_nr: string
-  adress: string
-  post_nr: string
-  ort: string
-  region_code: string
-  do_not_call: boolean
-  difficult_customer: boolean
-  block_email: boolean
-  block_gdpr: boolean
-  block_dm: boolean
+  first_name: string; last_name: string
+  email: string; alternative_email: string
+  tel: string; alternative_tel: string
+  pers_nr: string; adress: string
+  post_nr: string; ort: string; region_code: string
+  do_not_call: boolean; difficult_customer: boolean
+  block_email: boolean; block_gdpr: boolean; block_dm: boolean
 }
 
-function detailToForm(d: CustomerDetail): EditForm {
+function toForm(d: CustomerDetail): EditForm {
   return {
     first_name:         d.first_name ?? '',
     last_name:          d.last_name ?? '',
@@ -213,40 +129,31 @@ function detailToForm(d: CustomerDetail): EditForm {
   }
 }
 
-/* ── main ── */
+/* ── page ── */
 
-interface Props {
-  customer: Customer | null
-  open: boolean
-  onClose: () => void
-}
+export default function CustomerDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
 
-export function CustomerSheet({ customer, open, onClose }: Props) {
   const [detail, setDetail]   = useState<CustomerDetail | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving]   = useState(false)
   const [form, setForm]       = useState<EditForm | null>(null)
   const [error, setError]     = useState<string | null>(null)
 
   useEffect(() => {
-    if (!open || !customer) return
+    if (!id) return
     setLoading(true)
-    setEditing(false)
-    setDetail(null)
-    setError(null)
-    Promise.all([
-      getCustomer(customer.id),
-      new Promise<void>(resolve => setTimeout(resolve, 500)),
-    ])
-      .then(([res]) => setDetail(res.data))
-      .catch(() => setDetail(null))
+    getRailwayCustomer(Number(id))
+      .then(res => setDetail(res.data))
+      .catch(() => setError('Failed to load customer from Railway.'))
       .finally(() => setLoading(false))
-  }, [customer?.id, open])
+  }, [id])
 
   function startEdit() {
     if (!detail) return
-    setForm(detailToForm(detail))
+    setForm(toForm(detail))
     setError(null)
     setEditing(true)
   }
@@ -258,7 +165,7 @@ export function CustomerSheet({ customer, open, onClose }: Props) {
   }
 
   async function saveEdit() {
-    if (!form || !customer) return
+    if (!form || !id) return
     setSaving(true)
     setError(null)
     try {
@@ -280,7 +187,7 @@ export function CustomerSheet({ customer, open, onClose }: Props) {
         block_gdpr:         form.block_gdpr,
         block_dm:           form.block_dm,
       }
-      const res = await updateCustomer(customer.id, payload)
+      const res = await updateRailwayCustomer(Number(id), payload)
       setDetail(res.data)
       setEditing(false)
       setForm(null)
@@ -295,9 +202,9 @@ export function CustomerSheet({ customer, open, onClose }: Props) {
     setForm(prev => prev ? { ...prev, [key]: val } : prev)
   }
 
-  const fullName = customer ? `${customer.first_name} ${customer.last_name}` : ''
+  const fullName = detail ? `${detail.first_name} ${detail.last_name}` : '—'
 
-  const flags: FlagItem[] = detail ? [
+  const flags = detail ? [
     { icon: PhoneOff,     label: 'Do Not Call',      active: detail.do_not_call,        activeColor: 'text-red-600 bg-red-50' },
     { icon: AlertOctagon, label: 'Difficult',         active: detail.difficult_customer, activeColor: 'text-orange-600 bg-orange-50' },
     { icon: Ban,          label: 'Blocked Fees',      active: detail.blocked_fees,       activeColor: 'text-red-600 bg-red-50' },
@@ -307,48 +214,71 @@ export function CustomerSheet({ customer, open, onClose }: Props) {
   ] : []
 
   return (
-    <Sheet open={open} onOpenChange={v => !v && onClose()}>
-      <SheetContent className="w-[380px] sm:w-[420px] sm:max-w-none flex flex-col p-0 overflow-hidden">
+    <div className="min-h-screen bg-background">
+      <div className="max-w-3xl mx-auto px-6 py-8">
 
-        {/* ── Header ── */}
-        <div className="border-b border-border px-5 py-5 shrink-0 bg-gradient-to-b from-muted/40 to-background">
-          <SheetHeader>
-            <SheetTitle render={<div className="flex items-center gap-4" />}>
-              <Avatar name={fullName || '?'} />
-              <div className="min-w-0 flex-1">
-                <p className="text-xl font-bold leading-tight truncate">{fullName}</p>
-                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-                  <Hash className="h-3.5 w-3.5" />
-                  <span className="font-semibold text-foreground/70">{customer?.customer_no}</span>
-                </p>
+        {/* ── Top bar ── */}
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to customers
+          </button>
+
+          {detail && !loading && (
+            editing ? (
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={cancelEdit} disabled={saving}>
+                  <X className="h-4 w-4 mr-1.5" /> Cancel
+                </Button>
+                <Button size="sm" onClick={saveEdit} disabled={saving}>
+                  <Save className="h-4 w-4 mr-1.5" />
+                  {saving ? 'Saving…' : 'Save changes'}
+                </Button>
               </div>
-              {detail && !loading && (
-                editing ? (
-                  <div className="flex gap-1.5 shrink-0">
-                    <Button size="sm" variant="ghost" onClick={cancelEdit} disabled={saving} className="h-8 px-2">
-                      <X className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" onClick={saveEdit} disabled={saving} className="h-8 px-3 gap-1.5">
-                      <Save className="h-3.5 w-3.5" />
-                      {saving ? 'Saving…' : 'Save'}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button size="sm" variant="outline" onClick={startEdit} className="h-8 px-3 gap-1.5 shrink-0">
-                    <Pencil className="h-3.5 w-3.5" />
-                    Edit
-                  </Button>
-                )
-              )}
-            </SheetTitle>
-          </SheetHeader>
+            ) : (
+              <Button variant="outline" size="sm" onClick={startEdit}>
+                <Pencil className="h-4 w-4 mr-1.5" /> Edit
+              </Button>
+            )
+          )}
         </div>
 
-        {/* ── Scrollable body ── */}
         {loading ? (
-          <LoadingSkeleton />
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-16 w-16 rounded-2xl" />
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+            <Skeleton className="h-40 w-full rounded-lg" />
+            <Skeleton className="h-24 w-full rounded-lg" />
+          </div>
+        ) : error && !detail ? (
+          <p className="text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 px-4 py-3">
+            {error}
+          </p>
         ) : detail ? (
-          <div className="flex-1 overflow-y-auto px-5 pb-5">
+          <>
+            {/* ── Customer header ── */}
+            <div className="flex items-center gap-5 mb-2">
+              <Avatar name={fullName} />
+              <div>
+                <h1 className="text-2xl font-bold">{fullName}</h1>
+                <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
+                  <Hash className="h-3.5 w-3.5" />
+                  <span className="font-semibold text-foreground/70">{detail.customer_no}</span>
+                  <span className="mx-1.5 text-border">·</span>
+                  <span>{detail.order_count} orders</span>
+                  <span className="mx-1.5 text-border">·</span>
+                  <span>LTV {detail.ltv.toLocaleString('sv-SE', { style: 'currency', currency: 'SEK' })}</span>
+                </p>
+              </div>
+            </div>
 
             {error && (
               <p className="mt-3 text-xs text-destructive bg-destructive/5 rounded-lg border border-destructive/10 px-3 py-2">
@@ -357,10 +287,9 @@ export function CustomerSheet({ customer, open, onClose }: Props) {
             )}
 
             {editing && form ? (
-              /* ── Edit mode ── */
               <>
                 <SectionHeading title="Contact" />
-                <div className="space-y-2 rounded-lg border border-border px-3 py-3">
+                <div className="space-y-3 rounded-lg border border-border px-4 py-4">
                   <EditField label="First name"   value={form.first_name}        onChange={v => setField('first_name', v)} />
                   <EditField label="Last name"    value={form.last_name}         onChange={v => setField('last_name', v)} />
                   <EditField label="Email"        value={form.email}             onChange={v => setField('email', v)} />
@@ -371,15 +300,15 @@ export function CustomerSheet({ customer, open, onClose }: Props) {
                 </div>
 
                 <SectionHeading title="Address" />
-                <div className="space-y-2 rounded-lg border border-border px-3 py-3">
-                  <EditField label="Street"      value={form.adress}       onChange={v => setField('adress', v)} />
-                  <EditField label="Postal code" value={form.post_nr}      onChange={v => setField('post_nr', v)} />
-                  <EditField label="City"        value={form.ort}          onChange={v => setField('ort', v)} />
-                  <EditField label="Region"      value={form.region_code}  onChange={v => setField('region_code', v)} />
+                <div className="space-y-3 rounded-lg border border-border px-4 py-4">
+                  <EditField label="Street"      value={form.adress}      onChange={v => setField('adress', v)} />
+                  <EditField label="Postal code" value={form.post_nr}     onChange={v => setField('post_nr', v)} />
+                  <EditField label="City"        value={form.ort}         onChange={v => setField('ort', v)} />
+                  <EditField label="Region"      value={form.region_code} onChange={v => setField('region_code', v)} />
                 </div>
 
                 <SectionHeading title="Flags" />
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-3 gap-2">
                   <FlagToggle icon={PhoneOff}     label="Do Not Call"      active={form.do_not_call}        activeColor="text-red-600 bg-red-50"       onChange={v => setField('do_not_call', v)} />
                   <FlagToggle icon={AlertOctagon} label="Difficult"         active={form.difficult_customer} activeColor="text-orange-600 bg-orange-50" onChange={v => setField('difficult_customer', v)} />
                   <FlagToggle icon={MailX}        label="Block Email"       active={form.block_email}        activeColor="text-amber-600 bg-amber-50"   onChange={v => setField('block_email', v)} />
@@ -388,7 +317,6 @@ export function CustomerSheet({ customer, open, onClose }: Props) {
                 </div>
               </>
             ) : (
-              /* ── View mode ── */
               <>
                 <SectionHeading title="Contact" />
                 <FieldGrid rows={[
@@ -397,9 +325,7 @@ export function CustomerSheet({ customer, open, onClose }: Props) {
                   { label: 'Phone',        value: detail.tel },
                   { label: 'Alt. Phone',   value: detail.alternative_tel },
                   { label: 'SSN',          value: detail.pers_nr, mono: true },
-                  { label: 'Member since', value: detail.date_added
-                      ? new Date(detail.date_added).toLocaleDateString('sv-SE')
-                      : null },
+                  { label: 'Member since', value: detail.date_added ? new Date(detail.date_added).toLocaleDateString('sv-SE') : null },
                 ]} />
 
                 <SectionHeading title="Address" />
@@ -410,22 +336,14 @@ export function CustomerSheet({ customer, open, onClose }: Props) {
                 ]} />
 
                 <SectionHeading title="Flags" />
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-3 gap-2">
                   {flags.map(f => <FlagChip key={f.label} {...f} />)}
                 </div>
               </>
             )}
-
-          </div>
-        ) : (
-          <div className="px-5 py-6 text-center">
-            <p className="text-sm text-destructive bg-destructive/5 rounded-lg border border-destructive/10 px-4 py-3">
-              Failed to load customer details.
-            </p>
-          </div>
-        )}
-
-      </SheetContent>
-    </Sheet>
+          </>
+        ) : null}
+      </div>
+    </div>
   )
 }

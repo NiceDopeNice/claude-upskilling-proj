@@ -100,6 +100,29 @@ export function getCustomer(id: number): Promise<{ data: CustomerDetail }> {
   return http.get<{ data: CustomerDetail }>(`/customers/${id}`)
 }
 
+export interface UpdateCustomerPayload {
+  first_name?: string
+  last_name?: string
+  email?: string
+  alternative_email?: string
+  tel?: string
+  alternative_tel?: string
+  pers_nr?: string
+  adress?: string
+  post_nr?: string
+  ort?: string
+  region_code?: string
+  do_not_call?: boolean
+  difficult_customer?: boolean
+  block_email?: boolean
+  block_gdpr?: boolean
+  block_dm?: boolean
+}
+
+export function updateCustomer(id: number, payload: UpdateCustomerPayload): Promise<{ data: CustomerDetail }> {
+  return http.put<{ data: CustomerDetail }>(`/customers/${id}`, payload)
+}
+
 export function getCustomerOrders(
   id: number,
   page = 1,

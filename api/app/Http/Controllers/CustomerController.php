@@ -8,6 +8,7 @@ namespace App\Http\Controllers;
 
 use App\Contracts\Services\CustomerServiceInterface;
 use App\Http\Requests\ListCustomerRequest;
+use App\Http\Requests\UpdateCustomerRequest;
 use App\Http\Resources\CustomerDetailResource;
 use App\Http\Resources\CustomerOrderResource;
 use App\Http\Resources\CustomerResource;
@@ -38,6 +39,23 @@ class CustomerController extends Controller
 
         return response()->json([
             'data' => (new CustomerDetailResource((object) $customer))->toArray(request()),
+        ]);
+    }
+
+    public function update(UpdateCustomerRequest $request, int $id): JsonResponse
+    {
+        $customer = $this->service->detail($id);
+
+        if (!$customer) {
+            return response()->json(['message' => 'Customer not found'], 404);
+        }
+
+        $this->service->update($id, $request->validated());
+
+        $updated = $this->service->detail($id);
+
+        return response()->json([
+            'data' => (new CustomerDetailResource((object) $updated))->toArray(request()),
         ]);
     }
 

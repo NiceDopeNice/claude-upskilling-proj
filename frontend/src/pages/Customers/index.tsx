@@ -1,12 +1,13 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useCustomers } from '@/hooks/useCustomers'
 import { Customer } from '@/api/customerApi'
 import { CustomerSearch } from './components/CustomerSearch'
 import { CustomerTable } from './components/CustomerTable'
-import { CustomerSheet } from './components/CustomerSheet'
 import { CustomerOrdersSheet } from './components/CustomerOrdersSheet'
 
 export default function Customers() {
+  const navigate = useNavigate()
   const {
     mode, switchMode,
     simple, updateSimple, clearSimple,
@@ -19,16 +20,12 @@ export default function Customers() {
     data, loading,
   } = useCustomers()
 
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
-  const [detailOpen, setDetailOpen] = useState(false)
-
   const [ordersCustomer, setOrdersCustomer] = useState<Customer | null>(null)
   const [ordersOpen, setOrdersOpen] = useState(false)
 
   function handleRowClick(customer: Customer) {
     trackView(customer.id)
-    setSelectedCustomer(customer)
-    setDetailOpen(true)
+    navigate(`/customers/${customer.id}`)
   }
 
   function handleOrdersClick(customer: Customer) {
@@ -59,7 +56,7 @@ export default function Customers() {
           data={data?.data ?? []}
           meta={data?.meta ?? null}
           loading={loading}
-          selectedId={selectedCustomer?.id ?? null}
+          selectedId={null}
           onRowClick={handleRowClick}
           onOrdersClick={handleOrdersClick}
           page={page}
@@ -74,12 +71,6 @@ export default function Customers() {
           activeFilters={mode === 'multi' ? activeFilters : undefined}
         />
       </div>
-
-      <CustomerSheet
-        customer={selectedCustomer}
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-      />
 
       <CustomerOrdersSheet
         customer={ordersCustomer}
