@@ -22,3 +22,11 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+customer_organizations.sql
+customer_profile.sql
+customer_profile_extras.sql
+customer_profile_extras.sql
+tables_export.sql
+seed_orders.sql
+seed_customers.sql
+frontend/.env
