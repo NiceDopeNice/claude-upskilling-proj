@@ -11,6 +11,7 @@ use App\Models\CustomerProfile;
 use App\Models\CustomerProfileExtra;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CustomerRepository implements CustomerRepositoryInterface
 {
@@ -169,6 +170,57 @@ class CustomerRepository implements CustomerRepositoryInterface
             ])
             ->where('by_user', $customerId)
             ->orderBy('date_added', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    public function getOrdersByState(int $customerId, string $state, int $perPage, int $page): LengthAwarePaginator
+    {
+        $table = match ($state) {
+            'deleted'  => 'orders_deleted',
+            'rejected' => 'orders_temp',
+            default    => 'orders',
+        };
+
+        if (!Schema::hasTable($table)) {
+            return new LengthAwarePaginator([], 0, $perPage, $page);
+        }
+
+        $select = ['id', 'date_added', 'date_shipped', 'total', 'payment_method', 'ref', 'prod_id', 'subscription_id'];
+
+        if ($state === 'approved') {
+            $select = array_merge($select, ['date_paid', 'is_processed', 'is_shipped', 'is_paid']);
+        }
+
+        if ($state === 'deleted') {
+            $select = array_merge($select, ['date_deleted', 'date_paid', 'cancel_reason', 'cancel_category', 'cancel_reception']);
+        }
+
+        return DB::table($table)
+            ->select($select)
+            ->where('by_user', $customerId)
+            ->orderBy('date_added', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    public function getSubscriptions(int $customerId, string $state, int $perPage, int $page): LengthAwarePaginator
+    {
+        $table = $state === 'deleted' ? 'subscriptions_deleted' : 'subscriptions';
+
+        if (!Schema::hasTable($table)) {
+            return new LengthAwarePaginator([], 0, $perPage, $page);
+        }
+
+        $userCol = Schema::hasColumn($table, 'user_id') ? 'user_id' : 'by_user';
+
+        return DB::table($table)
+            ->select([
+                'id', $userCol,
+                'active', 'cancel_method', 'cancel_category', 'cancel_reason',
+                'payment_type', 'remote_id', 'subscription_id',
+                'next_shipment', 'date_started', 'date_cancelled', 'ref', 'ref1',
+            ])
+            ->where($userCol, $customerId)
+            ->orderBy('date_started', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
     }
 

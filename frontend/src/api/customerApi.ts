@@ -275,3 +275,84 @@ export function getCustomerOrders(
     `/customers/${id}/orders?page=${page}&per_page=${perPage}`,
   )
 }
+
+// ── Orders by state ──────────────────────────────────────────────────────────
+
+export type OrderState = 'approved' | 'rejected' | 'deleted'
+
+export interface CustomerOrderApproved {
+  id: number
+  date_added: string | null
+  date_shipped: string | null
+  date_paid: string | null
+  total: number
+  payment_method: string | null
+  ref: string | null
+  prod_id: number | null
+  subscription_id: number | null
+  is_processed: number
+  is_shipped: number
+  is_paid: number
+  state: 'approved'
+}
+
+export interface CustomerOrderDeleted {
+  id: number
+  date_added: string | null
+  date_shipped: string | null
+  date_deleted: string | null
+  date_paid: string | null
+  total: number
+  payment_method: string | null
+  ref: string | null
+  prod_id: number | null
+  subscription_id: number | null
+  cancel_reason: string | null
+  cancel_category: string | null
+  cancel_reception: string | null
+  state: 'deleted'
+}
+
+export type CustomerOrderByState = CustomerOrderApproved | CustomerOrderDeleted
+
+export function getCustomerOrdersByState(
+  id: number,
+  state: OrderState,
+  page = 1,
+  perPage = 20,
+): Promise<PaginatedResponse<CustomerOrderByState>> {
+  return http.get<PaginatedResponse<CustomerOrderByState>>(
+    `/customers/${id}/orders/${state}?page=${page}&per_page=${perPage}`,
+  )
+}
+
+// ── Subscriptions ────────────────────────────────────────────────────────────
+
+export type SubscriptionState = 'approved' | 'deleted'
+
+export interface CustomerSubscription {
+  id: number
+  active: boolean
+  cancel_method: string | null
+  cancel_category: string | null
+  cancel_reason: string | null
+  payment_type: string | null
+  remote_id: string | null
+  subscription_id: number | null
+  next_shipment: string | null
+  date_started: string | null
+  date_cancelled: string | null
+  ref: string | null
+  ref1: string | null
+}
+
+export function getCustomerSubscriptions(
+  id: number,
+  state: SubscriptionState,
+  page = 1,
+  perPage = 20,
+): Promise<PaginatedResponse<CustomerSubscription>> {
+  return http.get<PaginatedResponse<CustomerSubscription>>(
+    `/customers/${id}/subscriptions/${state}?page=${page}&per_page=${perPage}`,
+  )
+}

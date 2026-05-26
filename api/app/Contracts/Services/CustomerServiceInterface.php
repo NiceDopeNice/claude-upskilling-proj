@@ -17,4 +17,8 @@ interface CustomerServiceInterface
     public function update(int $id, array $data): bool;
 
     public function orders(int $customerId, int $perPage, int $page): LengthAwarePaginator;
+
+    public function ordersByState(int $customerId, string $state, int $perPage, int $page): LengthAwarePaginator;
+
+    public function subscriptions(int $customerId, string $state, int $perPage, int $page): LengthAwarePaginator;
 }

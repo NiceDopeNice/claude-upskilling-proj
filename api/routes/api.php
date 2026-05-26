@@ -16,6 +16,8 @@ Route::prefix('customers')->group(function () {
     Route::get('/{id}', [CustomerController::class, 'show'])->where('id', '[0-9]+');
     Route::put('/{id}', [CustomerController::class, 'update'])->where('id', '[0-9]+');
     Route::get('/{id}/orders', [CustomerController::class, 'orders'])->where('id', '[0-9]+');
+    Route::get('/{id}/orders/{state}', [CustomerController::class, 'ordersByState'])->where('id', '[0-9]+');
+    Route::get('/{id}/subscriptions/{state}', [CustomerController::class, 'subscriptions'])->where('id', '[0-9]+');
 
     // Comments
     Route::get('/{customerId}/comments', [CustomerCommentController::class, 'index'])->where('customerId', '[0-9]+');

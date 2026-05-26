@@ -34,7 +34,7 @@ export default function Customers() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div>
       <div className="max-w-screen-2xl mx-auto px-6 py-8 space-y-5">
         <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
 

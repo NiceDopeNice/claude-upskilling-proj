@@ -35,4 +35,14 @@ class CustomerService implements CustomerServiceInterface
     {
         return $this->repository->getOrders($customerId, $perPage, $page);
     }
+
+    public function ordersByState(int $customerId, string $state, int $perPage, int $page): LengthAwarePaginator
+    {
+        return $this->repository->getOrdersByState($customerId, $state, $perPage, $page);
+    }
+
+    public function subscriptions(int $customerId, string $state, int $perPage, int $page): LengthAwarePaginator
+    {
+        return $this->repository->getSubscriptions($customerId, $state, $perPage, $page);
+    }
 }

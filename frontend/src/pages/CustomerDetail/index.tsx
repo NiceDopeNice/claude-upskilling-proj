@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { CustomerComments } from './CustomerComments'
 import { CustomerReminders } from './CustomerReminders'
 import { CustomerOrganization } from './CustomerOrganization'
+import { CustomerOrders } from './CustomerOrders'
+import { CustomerSubscriptions } from './CustomerSubscriptions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -130,12 +132,14 @@ function toForm(d: CustomerDetail): EditForm {
   }
 }
 
-type Tab = 'reminders' | 'comments' | 'organization'
+type Tab = 'reminders' | 'comments' | 'organization' | 'orders' | 'subscriptions'
 
-const TABS: { key: Tab; icon: React.ElementType; label: string }[] = [
-  { key: 'reminders',    icon: Bell,          label: 'Reminders'    },
-  { key: 'comments',     icon: MessageSquare, label: 'Comments'     },
-  { key: 'organization', icon: Building2,     label: 'Organization' },
+const TABS: { key: Tab; icon: React.ElementType; label: string; disabled?: boolean }[] = [
+  { key: 'reminders',     icon: Bell,          label: 'Reminders'     },
+  { key: 'comments',      icon: MessageSquare, label: 'Comments'      },
+  { key: 'organization',  icon: Building2,     label: 'Organization'  },
+  { key: 'orders',        icon: ShoppingBag,   label: 'Orders',        disabled: true },
+  { key: 'subscriptions', icon: TrendingUp,    label: 'Subscriptions', disabled: true },
 ]
 
 /* ─────────────────────────────────────────── page */
@@ -210,8 +214,8 @@ export default function CustomerDetailPage() {
 
   /* ── loading skeleton ── */
   if (loading) return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-6 pt-6">
+    <div>
+      <div className="max-w-screen-2xl mx-auto px-6 pt-6">
         <div className="flex items-center gap-5 pb-4">
           <Skeleton className="h-20 w-20 rounded-2xl shrink-0" />
           <div className="space-y-2">
@@ -235,7 +239,7 @@ export default function CustomerDetailPage() {
   )
 
   if (error && !detail) return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
+    <div className="flex items-center justify-center py-20">
       <div className="text-center space-y-3">
         <p className="text-sm text-destructive bg-destructive/5 border border-destructive/10 rounded-lg px-5 py-3">{error}</p>
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
@@ -266,11 +270,11 @@ export default function CustomerDetailPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="bg-muted/30">
 
       {/* ── Profile bar ── */}
       <div className="bg-card border-b border-border shadow-sm">
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="max-w-screen-2xl mx-auto px-6">
 
           {/* Back + edit controls */}
           <div className="flex items-center justify-between pt-4 pb-3">
@@ -356,12 +360,15 @@ export default function CustomerDetailPage() {
             {TABS.map(tab => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-[3px] transition-colors ${
-                  activeTab === tab.key
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
-                } rounded-t-md`}
+                disabled={tab.disabled}
+                onClick={() => !tab.disabled && setActiveTab(tab.key)}
+                className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium border-b-[3px] transition-colors rounded-t-md ${
+                  tab.disabled
+                    ? 'border-transparent text-muted-foreground/40 cursor-not-allowed'
+                    : activeTab === tab.key
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                }`}
               >
                 <tab.icon className="h-4 w-4" />
                 {tab.label}
@@ -372,7 +379,7 @@ export default function CustomerDetailPage() {
       </div>
 
       {/* ── Page body ── */}
-      <div className="max-w-5xl mx-auto px-6 py-5 flex gap-5 items-start">
+      <div className="max-w-screen-2xl mx-auto px-6 py-5 flex gap-5 items-start">
 
         {/* ── Left sidebar ── */}
         <div className="w-72 shrink-0 space-y-3">
@@ -455,9 +462,11 @@ export default function CustomerDetailPage() {
 
         {/* ── Right content ── */}
         <div className="flex-1 min-w-0">
-          {activeTab === 'reminders'    && <CustomerReminders    customerId={detail.id} />}
+          {activeTab === 'reminders'     && <CustomerReminders    customerId={detail.id} />}
           {activeTab === 'comments'     && <CustomerComments     customerId={detail.id} />}
           {activeTab === 'organization' && <CustomerOrganization customerId={detail.id} />}
+          {activeTab === 'orders'       && <CustomerOrders       customerId={detail.id} />}
+          {activeTab === 'subscriptions' && <CustomerSubscriptions customerId={detail.id} />}
         </div>
 
       </div>

@@ -11,6 +11,8 @@ use App\Http\Requests\ListCustomerRequest;
 use App\Http\Requests\UpdateCustomerRequest;
 use App\Http\Resources\CustomerDetailResource;
 use App\Http\Resources\CustomerOrderResource;
+use App\Http\Resources\CustomerOrderDeletedResource;
+use App\Http\Resources\CustomerSubscriptionResource;
 use App\Http\Resources\CustomerResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -73,5 +75,49 @@ class CustomerController extends Controller
         $orders = $this->service->orders($id, $perPage, $page);
 
         return CustomerOrderResource::collection($orders);
+    }
+
+    public function ordersByState(Request $request, int $id, string $state): JsonResponse|AnonymousResourceCollection
+    {
+        $validStates = ['approved', 'rejected', 'deleted'];
+        if (!in_array($state, $validStates)) {
+            return response()->json(['message' => 'Invalid state'], 422);
+        }
+
+        $customer = $this->service->detail($id);
+        if (!$customer) {
+            return response()->json(['message' => 'Customer not found'], 404);
+        }
+
+        $perPage = (int) ($request->query('per_page', 20));
+        $page    = (int) ($request->query('page', 1));
+
+        $orders = $this->service->ordersByState($id, $state, $perPage, $page);
+
+        $resource = $state === 'deleted'
+            ? CustomerOrderDeletedResource::collection($orders)
+            : CustomerOrderResource::collection($orders);
+
+        return $resource;
+    }
+
+    public function subscriptions(Request $request, int $id, string $state): JsonResponse|AnonymousResourceCollection
+    {
+        $validStates = ['approved', 'deleted'];
+        if (!in_array($state, $validStates)) {
+            return response()->json(['message' => 'Invalid state'], 422);
+        }
+
+        $customer = $this->service->detail($id);
+        if (!$customer) {
+            return response()->json(['message' => 'Customer not found'], 404);
+        }
+
+        $perPage = (int) ($request->query('per_page', 20));
+        $page    = (int) ($request->query('page', 1));
+
+        $subs = $this->service->subscriptions($id, $state, $perPage, $page);
+
+        return CustomerSubscriptionResource::collection($subs);
     }
 }

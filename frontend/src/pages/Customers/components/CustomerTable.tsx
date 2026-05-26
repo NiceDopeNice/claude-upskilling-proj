@@ -28,14 +28,40 @@ import { Customer } from '@/api/customerApi'
 
 function highlight(text: string | null | undefined, term: string | undefined): ReactNode {
   if (!term || !text) return text ?? '—'
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
-  if (parts.length === 1) return text
-  return parts.map((part, i) =>
-    part.toLowerCase() === term.toLowerCase()
-      ? <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-sm not-italic">{part}</mark>
-      : part
-  )
+
+  const normalize = (s: string) =>
+    s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
+  const normText = normalize(text)
+  const normTerm = normalize(term)
+  if (!normTerm) return text
+
+  // Map each position in normText back to its UTF-16 index in the original text
+  const posMap: number[] = []
+  let origPos = 0
+  for (const ch of text) {
+    const normCh = normalize(ch)
+    for (let i = 0; i < normCh.length; i++) posMap.push(origPos)
+    origPos += ch.length
+  }
+
+  const escaped = normTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const regex = new RegExp(escaped, 'g')
+  const parts: ReactNode[] = []
+  let lastOrig = 0
+  let m: RegExpExecArray | null
+
+  while ((m = regex.exec(normText)) !== null) {
+    const oStart = posMap[m.index]
+    const oEnd = m.index + m[0].length < posMap.length ? posMap[m.index + m[0].length] : text.length
+    if (oStart > lastOrig) parts.push(text.slice(lastOrig, oStart))
+    parts.push(<mark key={m.index} className="bg-yellow-200 text-yellow-900 rounded-sm not-italic">{text.slice(oStart, oEnd)}</mark>)
+    lastOrig = oEnd
+  }
+
+  if (parts.length === 0) return text
+  if (lastOrig < text.length) parts.push(text.slice(lastOrig))
+  return parts
 }
 
 function SkeletonRows() {
