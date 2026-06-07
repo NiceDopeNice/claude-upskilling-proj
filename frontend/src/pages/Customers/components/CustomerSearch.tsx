@@ -154,15 +154,18 @@ export function CustomerSearch({
 
   const toggleButton = (
     <Tooltip>
-      <TooltipTrigger
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
-        onClick={() => onSwitchMode(mode === 'simple' ? 'multi' : 'simple')}
-      >
-        {mode === 'simple' ? (
-          <SlidersHorizontal className="h-4 w-4" />
-        ) : (
-          <Search className="h-4 w-4" />
-        )}
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+          onClick={() => onSwitchMode(mode === 'simple' ? 'multi' : 'simple')}
+        >
+          {mode === 'simple' ? (
+            <SlidersHorizontal className="h-4 w-4" />
+          ) : (
+            <Search className="h-4 w-4" />
+          )}
+        </button>
       </TooltipTrigger>
       <TooltipContent>
         {mode === 'simple' ? 'Switch to advanced search' : 'Switch to simple search'}

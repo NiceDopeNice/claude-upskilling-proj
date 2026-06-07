@@ -14,13 +14,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react'
@@ -211,7 +206,7 @@ export function CustomerTable({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-border overflow-hidden max-h-[600px] overflow-y-auto [&_[data-slot=table-container]]:overflow-x-clip">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map(hg => (
@@ -263,52 +258,62 @@ export function CustomerTable({
         </Table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
-        <span>
-          {meta && meta.total > 0
-            ? isLastViewed
-              ? `${meta.total.toLocaleString()} recently viewed`
-              : hasSearch
-                ? `Showing ${start.toLocaleString()} – ${end.toLocaleString()} of ${meta.total.toLocaleString()} results`
-                : `Showing ${start.toLocaleString()} – ${end.toLocaleString()} of ${meta.total.toLocaleString()} customers`
-            : 'No customers'}
-        </span>
-        <div className="flex items-center gap-3">
-          <Select
-            value={String(perPage)}
-            onValueChange={v => { onPerPageChange(Number(v)); onPageChange(1) }}
-          >
-            <SelectTrigger className="h-8 w-[80px] text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {[50, 100, 200, 500].map(n => (
-                <SelectItem key={n} value={String(n)} className="text-xs">{n}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline" size="icon" className="h-8 w-8"
-              disabled={page <= 1}
-              onClick={() => onPageChange(page - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            {meta && buildPageButtons(page, meta.last_page).map((p, i) =>
-              p === '...'
-                ? <span key={`e-${i}`} className="px-1">…</span>
-                : <Button key={p} variant={p === page ? 'default' : 'outline'} size="default" className="h-8 min-w-8 px-3 text-xs" onClick={() => onPageChange(p as number)}>{p}</Button>
+      {/* Bottom bar */}
+      {meta && (
+        <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+          <span>
+            {meta.total > 0
+              ? isLastViewed
+                ? `${meta.total.toLocaleString()} recently viewed`
+                : hasSearch
+                  ? `Showing ${start.toLocaleString()} – ${end.toLocaleString()} of ${meta.total.toLocaleString()} results`
+                  : `Showing ${start.toLocaleString()} – ${end.toLocaleString()} of ${meta.total.toLocaleString()} customers`
+              : 'No customers'}
+          </span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs whitespace-nowrap">Rows per page</span>
+              <Select value={String(perPage)} onValueChange={v => { onPerPageChange(Number(v)); onPageChange(1) }}>
+                <SelectTrigger className="h-8 w-[72px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Array.from(new Set([10, 20, 25, 50, 100, perPage])).sort((a, b) => a - b).map(n => (
+                    <SelectItem key={n} value={String(n)} className="text-xs">{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {meta.last_page > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  className="h-8 w-8 rounded-md border border-border hover:bg-muted disabled:opacity-40 transition-colors flex items-center justify-center"
+                  disabled={page <= 1}
+                  onClick={() => onPageChange(page - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                {buildPageButtons(page, meta.last_page).map((p, i) =>
+                  p === '...'
+                    ? <span key={`e-${i}`} className="h-8 w-8 flex items-center justify-center text-xs">…</span>
+                    : <button
+                        key={p}
+                        onClick={() => onPageChange(p as number)}
+                        className={`h-8 w-8 rounded-md text-xs font-medium flex items-center justify-center transition-colors ${
+                          p === page ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-muted'
+                        }`}
+                      >{p}</button>
+                )}
+                <button
+                  className="h-8 w-8 rounded-md border border-border hover:bg-muted disabled:opacity-40 transition-colors flex items-center justify-center"
+                  disabled={page >= meta.last_page}
+                  onClick={() => onPageChange(page + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             )}
-            <Button
-              variant="outline" size="icon" className="h-8 w-8"
-              disabled={!meta || page >= meta.last_page}
-              onClick={() => onPageChange(page + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

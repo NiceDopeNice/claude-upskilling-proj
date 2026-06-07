@@ -31,7 +31,7 @@ class CustomerCommentController extends Controller
             ...$data,
         ]);
 
-        return response()->json(['data' => $comment], 201);
+        return response()->json(['message' => 'Comment added successfully', 'data' => $comment], 201);
     }
 
     public function update(Request $request, int $customerId, int $id): JsonResponse
@@ -46,7 +46,7 @@ class CustomerCommentController extends Controller
 
         $comment->update($data);
 
-        return response()->json(['data' => $comment]);
+        return response()->json(['message' => 'Comment updated successfully', 'data' => $comment]);
     }
 
     public function destroy(int $customerId, int $id): JsonResponse
@@ -54,6 +54,6 @@ class CustomerCommentController extends Controller
         $comment = CustomerComment::where('customer_id', $customerId)->findOrFail($id);
         $comment->delete();
 
-        return response()->json(null, 204);
+        return response()->json(['message' => 'Comment deleted successfully']);
     }
 }

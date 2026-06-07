@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { AppSelect, SelectOption } from '@/components/AppSelect'
 import { Pencil, Trash2, Plus, Save, X, MessageSquare } from 'lucide-react'
 import {
   CustomerComment,
@@ -14,6 +14,7 @@ import {
 } from '@/api/customerApi'
 
 const BRANDS = ['All', 'Dentle', 'Grace', 'Zuave', 'Sinfrid'] as const
+const BRAND_OPTIONS: SelectOption[] = BRANDS.map(b => ({ value: b, label: b }))
 
 /* ── blank form ── */
 const emptyForm = (): CommentPayload => ({ message: '', brand: 'All' })
@@ -96,16 +97,15 @@ function CommentForm({
         rows={3}
         className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
       />
-      <Select value={form.brand ?? 'All'} onValueChange={v => set('brand', v)}>
-        <SelectTrigger size="sm" className="w-full text-xs">
-          <SelectValue placeholder="All Brand" />
-        </SelectTrigger>
-        <SelectContent>
-          {BRANDS.map(b => (
-            <SelectItem key={b} value={b}>{b}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <AppSelect
+        options={BRAND_OPTIONS}
+        value={BRAND_OPTIONS.find(o => o.value === (form.brand ?? 'All')) ?? null}
+        onChange={opt => set('brand', opt ? (opt as SelectOption).value : 'All')}
+        isSearchable={false}
+        menuPortalTarget={document.body}
+        menuPosition="fixed"
+        styles={{ menuPortal: base => ({ ...base, zIndex: 1000 }) }}
+      />
       <div className="flex justify-end gap-2">
         <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving} className="h-7">
           <X className="h-3.5 w-3.5 mr-1" /> Cancel
@@ -116,6 +116,45 @@ function CommentForm({
         </Button>
       </div>
     </div>
+  )
+}
+
+/* ── panel (portal slide-over) ── */
+export function CommentsPanel({ open, onClose, customerId, customerName }: {
+  open: boolean
+  onClose: () => void
+  customerId: number
+  customerName: string
+}) {
+  return createPortal(
+    <>
+      <div
+        onClick={onClose}
+        className={`fixed inset-0 z-[998] bg-black/30 backdrop-blur-sm transition-opacity duration-300 cursor-pointer ${
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      />
+      <div className={`fixed top-4 right-0 bottom-4 w-[440px] max-h-[calc(100vh-2rem)] z-[999] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-in-out rounded-l-2xl overflow-hidden ${
+        open ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="flex items-center gap-2.5 px-5 pt-5 pb-3 border-b border-border shrink-0">
+          <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
+            <MessageSquare className="h-5 w-5 text-blue-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-base font-semibold">Comments</div>
+            <p className="text-xs text-muted-foreground truncate">{customerName}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <CustomerComments customerId={customerId} />
+        </div>
+      </div>
+    </>,
+    document.body
   )
 }
 
@@ -141,8 +180,9 @@ export function CustomerComments({ customerId }: { customerId: number }) {
       const res = await createComment(customerId, payload)
       setComments(prev => [res.data, ...prev])
       setAdding(false)
+      toast.success(res.message)
     } catch {
-      setError('Failed to save comment.')
+      toast.error('Failed to save comment')
     } finally {
       setSaving(false)
     }
@@ -154,30 +194,39 @@ export function CustomerComments({ customerId }: { customerId: number }) {
       const res = await updateComment(customerId, commentId, payload)
       setComments(prev => prev.map(c => c.id === commentId ? res.data : c))
       setEditingId(null)
+      toast.success(res.message)
     } catch {
-      setError('Failed to update comment.')
+      toast.error('Failed to update comment')
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleDelete(commentId: number) {
-    try {
-      await deleteComment(customerId, commentId)
-      setComments(prev => prev.filter(c => c.id !== commentId))
-    } catch {
-      setError('Failed to delete comment.')
-    }
+  function handleDelete(commentId: number) {
+    toast('You\'re about to delete this comment', {
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          try {
+            const res = await deleteComment(customerId, commentId)
+            setComments(prev => prev.filter(c => c.id !== commentId))
+            toast.success(res.message)
+          } catch {
+            toast.error('Failed to delete comment')
+          }
+        },
+      },
+      cancel: { label: 'Cancel', onClick: () => {} },
+    })
   }
 
   return (
     <div className="space-y-2">
       {/* header */}
-      <div className="flex items-center justify-between pt-5 pb-2">
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60 flex items-center gap-1.5">
-          <MessageSquare className="h-3.5 w-3.5" />
-          Comments {comments.length > 0 && `(${comments.length})`}
-        </h2>
+      <div className="flex items-center justify-between pt-3 pb-2">
+        <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60">
+          {comments.length > 0 && `${comments.length} total`}
+        </span>
         {!adding && (
           <Button variant="outline" size="sm" onClick={() => setAdding(true)} className="h-7 text-xs gap-1">
             <Plus className="h-3.5 w-3.5" /> Add

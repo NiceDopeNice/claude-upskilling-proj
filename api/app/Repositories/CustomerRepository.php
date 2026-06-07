@@ -7,6 +7,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\CustomerRepositoryInterface;
+use App\Models\CustomerChange;
 use App\Models\CustomerProfile;
 use App\Models\CustomerProfileExtra;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -111,13 +112,23 @@ class CustomerRepository implements CustomerRepositoryInterface
                 'cp.post_nr',
                 'cp.ort',
                 'cp.region_code',
+                'cp.sex',
+                'cp.birthdate',
+                'cp.careof',
+                'cp.sync',
+                'cp.credit_check',
                 'cp.do_not_call',
                 'cp.difficult_customer',
                 'cp.blocked_fees',
+                'cp.reminders',
                 'cp.date_added',
                 'cpe.block_email',
                 'cpe.block_gdpr',
                 'cpe.block_dm',
+                'cpe.payment_preference',
+                'cpe.delivery_method',
+                'cpe.household_adults',
+                'cpe.household_children',
                 DB::raw('0 as ltv'),
                 DB::raw('(SELECT COUNT(*) FROM orders o WHERE o.by_user = cp.to_user) as order_count'),
                 DB::raw('(SELECT MAX(o.date_added) FROM orders o WHERE o.by_user = cp.to_user) as last_order_date'),
@@ -133,19 +144,48 @@ class CustomerRepository implements CustomerRepositoryInterface
         $profile = CustomerProfile::where('to_user', $id)->first();
         if (!$profile) return false;
 
+        $batchId = (CustomerChange::max('change_batch_id') ?? 0) + 1;
+
         $profileFields = [
             'first_name', 'last_name', 'email', 'alternative_email',
             'tel', 'alternative_tel', 'pers_nr', 'adress', 'post_nr',
-            'ort', 'region_code', 'do_not_call', 'difficult_customer',
+            'ort', 'region_code', 'sex', 'birthdate', 'careof',
+            'sync', 'credit_check', 'do_not_call', 'difficult_customer', 'reminders', 'blocked_fees',
         ];
         $profileData = array_intersect_key($data, array_flip($profileFields));
         if (!empty($profileData)) {
             $profile->update($profileData);
+            $profile->logChanges('update', $batchId, $id);
         }
 
-        $extrasData = array_intersect_key($data, array_flip(['block_email', 'block_gdpr', 'block_dm']));
+        $extrasFields = ['block_email', 'block_gdpr', 'block_dm', 'payment_preference', 'delivery_method', 'household_adults', 'household_children'];
+        $extrasData   = array_intersect_key($data, array_flip($extrasFields));
         if (!empty($extrasData)) {
+            $existing     = CustomerProfileExtra::where('customer_id', $id)->first();
+            $originalData = $existing ? $existing->toArray() : [];
+
             CustomerProfileExtra::updateOrCreate(['customer_id' => $id], $extrasData);
+
+            foreach ($extrasData as $field => $newValue) {
+                $oldValue = $originalData[$field] ?? null;
+                $oldNorm  = $this->normalizeForCompare($oldValue);
+                $newNorm  = $this->normalizeForCompare($newValue);
+
+                if ($oldNorm === $newNorm) {
+                    continue;
+                }
+
+                CustomerChange::create([
+                    'change_initiator_user_id' => null,
+                    'change_date'              => now(),
+                    'change_batch_id'          => $batchId,
+                    'change_user_id'           => $id,
+                    'change_action'            => 'update',
+                    'change_field'             => $field,
+                    'change_old_value'         => $oldValue !== null ? (string) $oldNorm : null,
+                    'change_new_value'         => $newValue !== null ? (string) $newNorm : null,
+                ]);
+            }
         }
 
         return true;
@@ -222,6 +262,15 @@ class CustomerRepository implements CustomerRepositoryInterface
             ->where($userCol, $customerId)
             ->orderBy('date_started', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
+    }
+
+    private function normalizeForCompare(mixed $value): mixed
+    {
+        if ($value === null) return null;
+        if (is_bool($value)) return (int) $value;
+        if ($value === '1' || $value === 1) return 1;
+        if ($value === '0' || $value === 0) return 0;
+        return $value;
     }
 
     private function applyFilter($query, string $field, string $value): void

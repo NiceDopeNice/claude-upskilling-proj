@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { Bell, Plus, Mail, Phone, ChevronDown, ChevronUp, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { AppSelect, SelectOption } from '@/components/AppSelect'
 import {
   CustomerReminder, CustomerReminderType, ActivateReminderPayload, DeactivationReason,
   getReminderTypes, getReminders, activateReminder, deactivateReminder, getReminderSends, ReminderSend,
@@ -85,23 +85,26 @@ function AddReminderForm({
   return (
     <div className="rounded-lg border border-primary/30 bg-muted/20 px-4 py-4 space-y-3">
       <div className="grid grid-cols-2 gap-2">
-        <Select value={typeCode} onValueChange={handleTypeChange}>
-          <SelectTrigger size="sm" className="text-xs">
-            <SelectValue placeholder="Reminder type" />
-          </SelectTrigger>
-          <SelectContent>
-            {types.map(t => <SelectItem key={t.code} value={t.code}>{t.label_en}</SelectItem>)}
-          </SelectContent>
-        </Select>
-
-        <Select value={brand} onValueChange={setBrand} disabled={!brandOptions.length}>
-          <SelectTrigger size="sm" className="text-xs">
-            <SelectValue placeholder="Brand" />
-          </SelectTrigger>
-          <SelectContent>
-            {brandOptions.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <AppSelect
+          options={types.map(t => ({ value: t.code, label: t.label_en }))}
+          value={typeCode ? { value: typeCode, label: types.find(t => t.code === typeCode)?.label_en ?? typeCode } : null}
+          onChange={opt => handleTypeChange((opt as SelectOption)?.value ?? '')}
+          placeholder="Reminder type"
+          isSearchable={false}
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
+          styles={{ menuPortal: base => ({ ...base, zIndex: 1100 }) }}
+        />
+        <AppSelect
+          options={brandOptions.map(b => ({ value: b, label: b }))}
+          value={brand ? { value: brand, label: brand } : null}
+          onChange={opt => setBrand((opt as SelectOption)?.value ?? '')}
+          placeholder="Brand"
+          isSearchable={false}
+          menuPortalTarget={document.body}
+          menuPosition="fixed"
+          styles={{ menuPortal: base => ({ ...base, zIndex: 1100 }) }}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -129,11 +132,11 @@ function AddReminderForm({
 
       <div className="flex gap-4">
         <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
-          <input type="checkbox" checked={sendSms} onChange={e => setSendSms(e.target.checked)} className="rounded" />
+          <Checkbox checked={sendSms} onCheckedChange={v => setSendSms(v === true)} />
           <Phone className="h-3.5 w-3.5 text-muted-foreground" /> SMS
         </label>
         <label className="flex items-center gap-1.5 text-xs cursor-pointer select-none">
-          <input type="checkbox" checked={sendEmail} onChange={e => setSendEmail(e.target.checked)} className="rounded" />
+          <Checkbox checked={sendEmail} onCheckedChange={v => setSendEmail(v === true)} />
           <Mail className="h-3.5 w-3.5 text-muted-foreground" /> Email
         </label>
       </div>
@@ -170,6 +173,9 @@ function ReminderCard({
       const res = await deactivateReminder(customerId, reminder.id, reason)
       onUpdated(res.data)
       setDeactivating(false)
+      toast.success(res.message)
+    } catch {
+      toast.error('Failed to deactivate reminder')
     } finally {
       setSaving(false)
     }
@@ -233,16 +239,15 @@ function ReminderCard({
 
       {deactivating && (
         <div className="space-y-2 pt-1 border-t border-border/50">
-          <Select value={reason} onValueChange={v => setReason(v as DeactivationReason)}>
-            <SelectTrigger size="sm" className="text-xs w-full">
-              <SelectValue placeholder="Select reason" />
-            </SelectTrigger>
-            <SelectContent>
-              {DEACTIVATION_REASONS.map(d => (
-                <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <AppSelect
+            options={DEACTIVATION_REASONS}
+            value={DEACTIVATION_REASONS.find(d => d.value === reason) ?? null}
+            onChange={opt => setReason((opt as SelectOption)?.value as DeactivationReason)}
+            isSearchable={false}
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
+            styles={{ menuPortal: base => ({ ...base, zIndex: 1100 }) }}
+          />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" className="h-7" onClick={() => setDeactivating(false)} disabled={saving}>
               Cancel
@@ -297,8 +302,9 @@ export function CustomerReminders({ customerId }: { customerId: number }) {
           : [res.data, ...prev]
       })
       setAdding(false)
+      toast.success(res.message)
     } catch {
-      setError('Failed to activate reminder.')
+      toast.error('Failed to activate reminder')
     } finally {
       setSaving(false)
     }
@@ -310,7 +316,7 @@ export function CustomerReminders({ customerId }: { customerId: number }) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between pt-5 pb-2">
+      <div className="flex items-center justify-between pb-2">
         <h2 className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60 flex items-center gap-1.5">
           <Bell className="h-3.5 w-3.5" />
           Reminders {reminders.length > 0 && `(${reminders.length})`}

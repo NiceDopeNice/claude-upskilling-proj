@@ -28,16 +28,26 @@ export interface CustomerDetail {
   post_nr: string | null
   ort: string
   region_code: string | null
+  sex: 'male' | 'female' | 'unknown'
+  birthdate: string | null
+  careof: string | null
+  sync: boolean
+  credit_check: number | null
+  payment_preference: string | null
+  delivery_method: string | null
   date_added: string | null
   ltv: number
   order_count: number
   last_order_date: string | null
   do_not_call: boolean
   difficult_customer: boolean
-  blocked_fees: boolean
+  blocked_fees: string[]
   block_email: boolean
   block_gdpr: boolean
   block_dm: boolean
+  reminders: boolean
+  household_adults: number | null
+  household_children: number | null
 }
 
 export interface CustomerOrder {
@@ -112,15 +122,45 @@ export interface UpdateCustomerPayload {
   post_nr?: string
   ort?: string
   region_code?: string
+  sex?: 'male' | 'female' | 'unknown'
+  birthdate?: string
+  careof?: string
+  sync?: boolean
+  credit_check?: number | null
+  payment_preference?: string | null
+  delivery_method?: string | null
   do_not_call?: boolean
   difficult_customer?: boolean
+  reminders?: boolean
   block_email?: boolean
   block_gdpr?: boolean
   block_dm?: boolean
+  blocked_fees?: string[]
+  household_adults?: number | null
+  household_children?: number | null
 }
 
-export function updateCustomer(id: number, payload: UpdateCustomerPayload): Promise<{ data: CustomerDetail }> {
-  return http.put<{ data: CustomerDetail }>(`/customers/${id}`, payload)
+export function updateCustomer(id: number, payload: UpdateCustomerPayload): Promise<{ message: string; data: CustomerDetail }> {
+  return http.put<{ message: string; data: CustomerDetail }>(`/customers/${id}`, payload)
+}
+
+export interface BlockedSsnRecord {
+  id: number
+  ssn: string
+  reason: string | null
+}
+
+export function blockSsn(ssn: string, reason?: string): Promise<{ message: string; data: BlockedSsnRecord }> {
+  return http.post<{ message: string; data: BlockedSsnRecord }>('/customers/blocked-ssn', { ssn, reason: reason || null })
+}
+
+export function unblockSsn(id: number): Promise<{ message: string }> {
+  return http.delete<{ message: string }>(`/customers/blocked-ssn/${id}`)
+}
+
+export function checkBlockedSsn(ssn: string): Promise<BlockedSsnRecord | null> {
+  return http.get<PaginatedResponse<BlockedSsnRecord>>(`/customers/blocked-ssn?search=${encodeURIComponent(ssn)}`)
+    .then(res => res.data.find(r => r.ssn === ssn) ?? null)
 }
 
 export interface CustomerComment {
@@ -143,16 +183,16 @@ export function getComments(customerId: number): Promise<{ data: CustomerComment
   return http.get<{ data: CustomerComment[] }>(`/customers/${customerId}/comments`)
 }
 
-export function createComment(customerId: number, payload: CommentPayload): Promise<{ data: CustomerComment }> {
-  return http.post<{ data: CustomerComment }>(`/customers/${customerId}/comments`, payload)
+export function createComment(customerId: number, payload: CommentPayload): Promise<{ message: string; data: CustomerComment }> {
+  return http.post<{ message: string; data: CustomerComment }>(`/customers/${customerId}/comments`, payload)
 }
 
-export function updateComment(customerId: number, commentId: number, payload: CommentPayload): Promise<{ data: CustomerComment }> {
-  return http.put<{ data: CustomerComment }>(`/customers/${customerId}/comments/${commentId}`, payload)
+export function updateComment(customerId: number, commentId: number, payload: CommentPayload): Promise<{ message: string; data: CustomerComment }> {
+  return http.put<{ message: string; data: CustomerComment }>(`/customers/${customerId}/comments/${commentId}`, payload)
 }
 
-export function deleteComment(customerId: number, commentId: number): Promise<null> {
-  return http.delete<null>(`/customers/${customerId}/comments/${commentId}`)
+export function deleteComment(customerId: number, commentId: number): Promise<{ message: string }> {
+  return http.delete<{ message: string }>(`/customers/${customerId}/comments/${commentId}`)
 }
 
 // ── Reminders ──────────────────────────────────────────────────────────────
@@ -226,16 +266,37 @@ export function getReminders(customerId: number): Promise<{ data: CustomerRemind
   return http.get<{ data: CustomerReminder[] }>(`/customers/${customerId}/reminders`)
 }
 
-export function activateReminder(customerId: number, payload: ActivateReminderPayload): Promise<{ data: CustomerReminder }> {
-  return http.post<{ data: CustomerReminder }>(`/customers/${customerId}/reminders`, payload)
+export function activateReminder(customerId: number, payload: ActivateReminderPayload): Promise<{ message: string; data: CustomerReminder }> {
+  return http.post<{ message: string; data: CustomerReminder }>(`/customers/${customerId}/reminders`, payload)
 }
 
-export function deactivateReminder(customerId: number, reminderId: number, reason: DeactivationReason): Promise<{ data: CustomerReminder }> {
-  return http.post<{ data: CustomerReminder }>(`/customers/${customerId}/reminders/${reminderId}/deactivate`, { reason })
+export function deactivateReminder(customerId: number, reminderId: number, reason: DeactivationReason): Promise<{ message: string; data: CustomerReminder }> {
+  return http.post<{ message: string; data: CustomerReminder }>(`/customers/${customerId}/reminders/${reminderId}/deactivate`, { reason })
 }
 
 export function getReminderSends(customerId: number, reminderId: number): Promise<{ data: ReminderSend[] }> {
   return http.get<{ data: ReminderSend[] }>(`/customers/${customerId}/reminders/${reminderId}/sends`)
+}
+
+// ── GDPR ────────────────────────────────────────────────────────────────────
+
+export type GdprExclusionType = '2y_after_starter' | 'subscription_end'
+
+export interface GdprExclusionTypeOption {
+  value: GdprExclusionType
+  label: string
+}
+
+export function getGdprExclusionTypes(): Promise<{ data: GdprExclusionTypeOption[] }> {
+  return http.get<{ data: GdprExclusionTypeOption[] }>('/gdpr/exclusion-types')
+}
+
+export function flagGdpr(customerId: number, exclusionType: GdprExclusionType): Promise<{ message: string }> {
+  return http.post<{ message: string }>('/gdpr/flag', { customer_id: customerId, exclusion_type: exclusionType })
+}
+
+export function unflagGdpr(customerId: number): Promise<{ message: string }> {
+  return http.delete<{ message: string }>(`/gdpr/${customerId}`)
 }
 
 // ── Organization ────────────────────────────────────────────────────────────
@@ -260,8 +321,8 @@ export function getOrganization(customerId: number): Promise<{ data: CustomerOrg
   return http.get<{ data: CustomerOrganization | null }>(`/customers/${customerId}/organization`)
 }
 
-export function upsertOrganization(customerId: number, payload: OrganizationPayload): Promise<{ data: CustomerOrganization }> {
-  return http.put<{ data: CustomerOrganization }>(`/customers/${customerId}/organization`, payload)
+export function upsertOrganization(customerId: number, payload: OrganizationPayload): Promise<{ message: string; data: CustomerOrganization }> {
+  return http.put<{ message: string; data: CustomerOrganization }>(`/customers/${customerId}/organization`, payload)
 }
 
 // ── Orders ──────────────────────────────────────────────────────────────────
@@ -355,4 +416,24 @@ export function getCustomerSubscriptions(
   return http.get<PaginatedResponse<CustomerSubscription>>(
     `/customers/${id}/subscriptions/${state}?page=${page}&per_page=${perPage}`,
   )
+}
+
+/* ── Customer Changes ── */
+
+export interface CustomerChangeField {
+  field:     string
+  old_value: string | null
+  new_value: string | null
+}
+
+export interface CustomerChangeBatch {
+  batch_id:   number
+  action:     string | null
+  initiator:  string | null
+  changed_at: string | null
+  fields:     CustomerChangeField[]
+}
+
+export function getCustomerChanges(customerId: number): Promise<{ data: CustomerChangeBatch[] }> {
+  return http.get<{ data: CustomerChangeBatch[] }>(`/customers/${customerId}/changes`)
 }

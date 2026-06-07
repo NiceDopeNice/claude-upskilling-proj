@@ -26,7 +26,7 @@ class ListCustomerRequest extends FormRequest
             'filters.*' => ['nullable', 'string', 'max:255'],
             'ids'       => ['nullable', 'array', 'max:50'],
             'ids.*'     => ['nullable', 'integer', 'min:1'],
-            'per_page'  => ['nullable', 'integer', 'in:50,100,200,500'],
+            'per_page'  => ['nullable', 'integer', 'min:1', 'max:500'],
             'page'      => ['nullable', 'integer', 'min:1'],
         ];
     }

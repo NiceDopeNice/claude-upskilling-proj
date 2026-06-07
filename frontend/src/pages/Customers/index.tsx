@@ -8,6 +8,9 @@ import { CustomerOrdersSheet } from './components/CustomerOrdersSheet'
 
 export default function Customers() {
   const navigate = useNavigate()
+  const [perPage, setPerPage] = useState(() =>
+    Math.max(10, Math.floor((window.innerHeight - 380) / 52))
+  )
   const {
     mode, switchMode,
     simple, updateSimple, clearSimple,
@@ -16,9 +19,8 @@ export default function Customers() {
     trackView,
     hasSearch, isLastViewed, activeFilters,
     page, setPage,
-    perPage, setPerPage,
     data, loading,
-  } = useCustomers()
+  } = useCustomers(perPage)
 
   const [ordersCustomer, setOrdersCustomer] = useState<Customer | null>(null)
   const [ordersOpen, setOrdersOpen] = useState(false)

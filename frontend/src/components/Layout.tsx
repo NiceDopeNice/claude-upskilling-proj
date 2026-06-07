@@ -2,18 +2,14 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   Users, ChevronLeft, ChevronRight, LayoutDashboard,
-  Bell, Settings, LogOut, Menu, X,
+  Bell, Settings, LogOut, Menu, X, ShieldAlert, List, ShieldX,
 } from 'lucide-react'
-
-const NAV_ITEMS = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-  { to: '/customers', icon: Users, label: 'Customers', exact: false },
-]
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 function SidebarLink({
-  to, icon: Icon, label, collapsed, exact,
+  to, icon: Icon, label, collapsed, exact, sub,
 }: {
-  to: string; icon: React.ElementType; label: string; collapsed: boolean; exact: boolean
+  to: string; icon: React.ElementType; label: string; collapsed: boolean; exact: boolean; sub?: boolean
 }) {
   const location = useLocation()
   const active = exact ? location.pathname === to : location.pathname.startsWith(to)
@@ -21,11 +17,12 @@ function SidebarLink({
   return (
     <NavLink
       to={to}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group relative ${
-        active
+      className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-all group relative
+        ${sub && !collapsed ? 'pl-7 pr-3 py-2' : 'px-3 py-2.5'}
+        ${active
           ? 'bg-primary text-primary-foreground shadow-sm'
           : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-      }`}
+        }`}
       title={collapsed ? label : undefined}
     >
       <Icon className="h-4 w-4 shrink-0" />
@@ -36,6 +33,51 @@ function SidebarLink({
         </span>
       )}
     </NavLink>
+  )
+}
+
+function SidebarGroup({
+  icon: Icon, label, collapsed, activePaths, children,
+}: {
+  icon: React.ElementType; label: string; collapsed: boolean; activePaths: string[]; children: React.ReactNode
+}) {
+  const location = useLocation()
+  const isGroupActive = activePaths.some(p => location.pathname.startsWith(p))
+  const [open, setOpen] = useState(true)
+
+  const isExpanded = collapsed ? false : open
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => !collapsed && setOpen(o => !o)}
+        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group relative
+          ${isGroupActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'}
+          ${collapsed ? 'justify-center' : ''}
+        `}
+        title={collapsed ? label : undefined}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        {!collapsed && (
+          <>
+            <span className="truncate flex-1 text-left">{label}</span>
+            <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${open ? 'rotate-90' : ''}`} />
+          </>
+        )}
+        {collapsed && (
+          <span className="absolute left-full ml-3 px-2 py-1 rounded-md bg-popover border border-border text-foreground text-xs shadow-md opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 transition-opacity">
+            {label}
+          </span>
+        )}
+      </button>
+
+      {isExpanded && (
+        <div className="space-y-0.5 mt-0.5">
+          {children}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -65,13 +107,23 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex-1" />
 
         {/* Header actions */}
-        <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative">
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
-        </button>
-        <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-          <Settings className="h-4 w-4" />
-        </button>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors relative">
+              <Bell className="h-4 w-4" />
+              <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Notifications</TooltipContent>
+        </Tooltip>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            <button className="p-2 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+              <Settings className="h-4 w-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Settings</TooltipContent>
+        </Tooltip>
 
         <div className="h-6 w-px bg-border mx-1" />
 
@@ -105,17 +157,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           `}
         >
           {/* Nav items */}
-          <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
-            {NAV_ITEMS.map(item => (
-              <SidebarLink
-                key={item.to}
-                to={item.to}
-                icon={item.icon}
-                label={item.label}
-                collapsed={collapsed}
-                exact={item.exact}
-              />
-            ))}
+          <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto overflow-x-hidden">
+            <SidebarLink to="/" icon={LayoutDashboard} label="Dashboard" collapsed={collapsed} exact={true} />
+
+            <SidebarGroup icon={Users} label="Customers" collapsed={collapsed} activePaths={['/customers', '/gdpr']}>
+              <SidebarLink to="/customers"             icon={List}        label="List"        collapsed={collapsed} exact={true} sub />
+              <SidebarLink to="/gdpr"                  icon={ShieldAlert} label="GDPR"        collapsed={collapsed} exact={false} sub />
+              <SidebarLink to="/customers/blocked-ssn" icon={ShieldX}     label="Blocked SSN" collapsed={collapsed} exact={false} sub />
+            </SidebarGroup>
           </nav>
 
           {/* Bottom: logout + collapse toggle */}

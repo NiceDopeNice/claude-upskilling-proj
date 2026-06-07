@@ -1,18 +1,36 @@
 import { useEffect, useState } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
   CustomerOrderByState, CustomerOrderDeleted, OrderState,
   getCustomerOrdersByState,
   PaginatedResponse,
 } from '@/api/customerApi'
-import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+function buildPageButtons(current: number, last: number): (number | '...')[] {
+  if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1)
+  const pages: (number | '...')[] = [1]
+  if (current > 3) pages.push('...')
+  for (let i = Math.max(2, current - 1); i <= Math.min(last - 1, current + 1); i++) pages.push(i)
+  if (current < last - 2) pages.push('...')
+  pages.push(last)
+  return pages
+}
 
 const STATES: { key: OrderState; label: string }[] = [
   { key: 'approved', label: 'Approved' },
   { key: 'rejected', label: 'Rejected' },
   { key: 'deleted',  label: 'Deleted'  },
 ]
+
+const PER_PAGE_OPTS = [10, 20, 25, 50, 100]
+const TH = 'bg-muted text-xs font-semibold uppercase tracking-wide text-muted-foreground py-3'
 
 function fmt(d: string | null | undefined) {
   return d ? new Date(d).toLocaleDateString('sv-SE') : '—'
@@ -30,28 +48,27 @@ function StatusBadge({ row }: { row: CustomerOrderByState }) {
 }
 
 export function CustomerOrders({ customerId }: { customerId: number }) {
-  const [state, setState] = useState<OrderState>('approved')
-  const [page, setPage]   = useState(1)
-  const [data, setData]   = useState<PaginatedResponse<CustomerOrderByState> | null>(null)
+  const [state, setState]   = useState<OrderState>('approved')
+  const [page, setPage]     = useState(1)
+  const [perPage, setPerPage] = useState(20)
+  const [data, setData]     = useState<PaginatedResponse<CustomerOrderByState> | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]   = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
     setError(null)
-    getCustomerOrdersByState(customerId, state, page, 20)
+    getCustomerOrdersByState(customerId, state, page, perPage)
       .then(setData)
       .catch(() => setError('Failed to load orders.'))
       .finally(() => setLoading(false))
-  }, [customerId, state, page])
+  }, [customerId, state, page, perPage])
 
-  function switchState(s: OrderState) {
-    setState(s)
-    setPage(1)
-  }
+  function switchState(s: OrderState) { setState(s); setPage(1) }
 
   const rows = data?.data ?? []
   const meta = data?.meta ?? null
+  const colCount = state === 'deleted' ? 9 : 7
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -79,82 +96,111 @@ export function CustomerOrders({ customerId }: { customerId: number }) {
         <p className="text-xs text-destructive px-5 py-3 bg-destructive/5 border-b border-destructive/10">{error}</p>
       )}
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/40">
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">ID</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Date</th>
-              {state === 'deleted' && (
-                <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Deleted</th>
-              )}
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Ref</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Product</th>
-              <th className="px-4 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Total</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Payment</th>
-              <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
-              {state === 'deleted' && (
-                <th className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Cancel reason</th>
-              )}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/50">
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i}>
-                  {Array.from({ length: state === 'deleted' ? 9 : 7 }).map((_, j) => (
-                    <td key={j} className="px-4 py-3"><Skeleton className="h-3.5 w-full" /></td>
-                  ))}
-                </tr>
-              ))
-            ) : rows.length === 0 ? (
-              <tr>
-                <td colSpan={state === 'deleted' ? 9 : 7} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  No {state} orders
-                </td>
-              </tr>
-            ) : (
-              rows.map(row => {
-                const del = row as CustomerOrderDeleted
-                return (
-                  <tr key={row.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{row.id}</td>
-                    <td className="px-4 py-2.5 whitespace-nowrap">{fmt(row.date_added)}</td>
-                    {state === 'deleted' && (
-                      <td className="px-4 py-2.5 whitespace-nowrap text-red-600">{fmt(del.date_deleted)}</td>
-                    )}
-                    <td className="px-4 py-2.5 font-mono text-xs">{row.ref || '—'}</td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{row.prod_id ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums font-medium">
-                      {row.total.toLocaleString('sv-SE', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-4 py-2.5 text-xs capitalize text-muted-foreground">{row.payment_method || '—'}</td>
-                    <td className="px-4 py-2.5"><StatusBadge row={row} /></td>
-                    {state === 'deleted' && (
-                      <td className="px-4 py-2.5 text-xs text-muted-foreground max-w-[160px] truncate">{del.cancel_reason || '—'}</td>
-                    )}
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-muted/40">
+            <TableHead className={TH}>ID</TableHead>
+            <TableHead className={TH}>Date</TableHead>
+            {state === 'deleted' && <TableHead className={TH}>Deleted</TableHead>}
+            <TableHead className={TH}>Ref</TableHead>
+            <TableHead className={TH}>Product</TableHead>
+            <TableHead className={`${TH} text-right`}>Total</TableHead>
+            <TableHead className={TH}>Payment</TableHead>
+            <TableHead className={TH}>Status</TableHead>
+            {state === 'deleted' && <TableHead className={TH}>Cancel reason</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={i}>
+                {Array.from({ length: colCount }).map((_, j) => (
+                  <TableCell key={j} className="py-3"><Skeleton className="h-3.5 w-full" /></TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={colCount} className="py-10 text-center text-sm text-muted-foreground">
+                No {state} orders
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map(row => {
+              const del = row as CustomerOrderDeleted
+              return (
+                <TableRow key={row.id} className="transition-colors hover:bg-muted/40">
+                  <TableCell className="py-3 font-mono text-xs text-muted-foreground">{row.id}</TableCell>
+                  <TableCell className="py-3 whitespace-nowrap">{fmt(row.date_added)}</TableCell>
+                  {state === 'deleted' && (
+                    <TableCell className="py-3 whitespace-nowrap text-red-600">{fmt(del.date_deleted)}</TableCell>
+                  )}
+                  <TableCell className="py-3 font-mono text-xs">{row.ref || '—'}</TableCell>
+                  <TableCell className="py-3 font-mono text-xs text-muted-foreground">{row.prod_id ?? '—'}</TableCell>
+                  <TableCell className="py-3 text-right tabular-nums font-medium">
+                    {row.total.toLocaleString('sv-SE', { minimumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="py-3 text-xs capitalize text-muted-foreground">{row.payment_method || '—'}</TableCell>
+                  <TableCell className="py-3"><StatusBadge row={row} /></TableCell>
+                  {state === 'deleted' && (
+                    <TableCell className="py-3 text-xs text-muted-foreground max-w-[160px] truncate">{del.cancel_reason || '—'}</TableCell>
+                  )}
+                </TableRow>
+              )
+            })
+          )}
+        </TableBody>
+      </Table>
 
-      {/* Pagination */}
-      {meta && meta.last_page > 1 && (
+      {/* Bottom bar */}
+      {meta && (
         <div className="border-t border-border px-5 py-2.5 flex items-center justify-between text-xs text-muted-foreground">
           <span>
-            {(meta.current_page - 1) * meta.per_page + 1}–{Math.min(meta.current_page * meta.per_page, meta.total)} of {meta.total.toLocaleString()}
+            {meta.total > 0
+              ? `${(meta.current_page - 1) * meta.per_page + 1}–${Math.min(meta.current_page * meta.per_page, meta.total)} of ${meta.total.toLocaleString()}`
+              : 'No results'}
           </span>
-          <div className="flex gap-1">
-            <Button variant="outline" size="icon" className="h-7 w-7" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-              <ChevronLeft className="h-3.5 w-3.5" />
-            </Button>
-            <Button variant="outline" size="icon" className="h-7 w-7" disabled={page >= meta.last_page} onClick={() => setPage(p => p + 1)}>
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs whitespace-nowrap">Rows per page</span>
+              <Select value={String(perPage)} onValueChange={v => { setPerPage(Number(v)); setPage(1) }}>
+                <SelectTrigger className="h-7 w-[60px] text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PER_PAGE_OPTS.map(n => (
+                    <SelectItem key={n} value={String(n)} className="text-xs">{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {meta.last_page > 1 && (
+              <div className="flex items-center gap-1">
+                <button
+                  className="h-7 w-7 rounded border border-border hover:bg-muted disabled:opacity-40 transition-colors flex items-center justify-center"
+                  disabled={page <= 1}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                {buildPageButtons(page, meta.last_page).map((p, i) =>
+                  p === '...'
+                    ? <span key={`e-${i}`} className="h-7 w-7 flex items-center justify-center text-xs">…</span>
+                    : <button
+                        key={p}
+                        onClick={() => setPage(p as number)}
+                        className={`h-7 w-7 rounded text-xs font-medium flex items-center justify-center transition-colors ${
+                          p === page ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-muted'
+                        }`}
+                      >{p}</button>
+                )}
+                <button
+                  className="h-7 w-7 rounded border border-border hover:bg-muted disabled:opacity-40 transition-colors flex items-center justify-center"
+                  disabled={page >= meta.last_page}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

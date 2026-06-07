@@ -57,7 +57,7 @@ class CustomerReminderController extends Controller
             ]
         );
 
-        return response()->json(['data' => $reminder->load('type')], 201);
+        return response()->json(['message' => 'Reminder activated successfully', 'data' => $reminder->load('type')], 201);
     }
 
     public function deactivate(Request $request, int $customerId, int $id): JsonResponse
@@ -74,7 +74,7 @@ class CustomerReminderController extends Controller
             'deactivated_reason' => $data['reason'],
         ]);
 
-        return response()->json(['data' => $reminder->load('type')]);
+        return response()->json(['message' => 'Reminder deactivated successfully', 'data' => $reminder->load('type')]);
     }
 
     public function sends(int $customerId, int $id): JsonResponse

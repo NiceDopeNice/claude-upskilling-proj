@@ -57,7 +57,8 @@ class CustomerController extends Controller
         $updated = $this->service->detail($id);
 
         return response()->json([
-            'data' => (new CustomerDetailResource((object) $updated))->toArray(request()),
+            'message' => 'Customer has been updated successfully',
+            'data'    => (new CustomerDetailResource((object) $updated))->toArray(request()),
         ]);
     }
 

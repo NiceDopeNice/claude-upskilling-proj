@@ -18,6 +18,7 @@ class CustomerProfileExtra extends Model
         'customer_id', 'block_email', 'block_gdpr', 'block_dm',
         'date_cancelled', 'trial_sinfrid', 'stowaway',
         'payment_preference', 'delivery_method', 'metadata', 'last_open_at',
+        'household_adults', 'household_children',
     ];
 
     protected $casts = [

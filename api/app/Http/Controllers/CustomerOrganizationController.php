@@ -43,6 +43,6 @@ class CustomerOrganizationController extends Controller
         $customer->organization_id = $org->id;
         $customer->save();
 
-        return response()->json(['data' => $org]);
+        return response()->json(['message' => 'Organization updated successfully', 'data' => $org]);
     }
 }

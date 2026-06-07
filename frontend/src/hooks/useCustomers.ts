@@ -60,7 +60,7 @@ function loadLastViewedIds(): number[] {
   return []
 }
 
-export function useCustomers() {
+export function useCustomers(perPage: number) {
   const [mode, setMode] = useState<SearchMode>(loadMode)
   const [simple, setSimple] = useState<SimpleSearch>({ fields: ['name', 'customer_no', 'order_no', 'tel'], term: '' })
   const [chips, setChips] = useState<ChipFilter[]>(loadChips)
@@ -68,7 +68,8 @@ export function useCustomers() {
   const lastViewedIdsRef = useRef(lastViewedIds)
 
   const [page, setPage] = useState(1)
-  const [perPage, setPerPage] = useState(50)
+
+  useEffect(() => { setPage(1) }, [perPage])
 
   const [data, setData] = useState<PaginatedResponse<Customer> | null>(null)
   const [loading, setLoading] = useState(false)
@@ -195,7 +196,7 @@ export function useCustomers() {
     isLastViewed,
     activeFilters,
     page, setPage,
-    perPage, setPerPage,
+    perPage,
     data, loading, error,
   }
 }
