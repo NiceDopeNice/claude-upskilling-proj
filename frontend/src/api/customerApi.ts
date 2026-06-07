@@ -322,7 +322,7 @@ export function getOrganization(customerId: number): Promise<{ data: CustomerOrg
 }
 
 export function upsertOrganization(customerId: number, payload: OrganizationPayload): Promise<{ message: string; data: CustomerOrganization }> {
-  return http.put<{ message: string; data: CustomerOrganization }>(`/customers/${customerId}/organization`, payload)
+  return http.put<{ message: string; data: CustomerOrganization }>(`/customers/${customerId}/organization`, payload, true)
 }
 
 // ── Orders ──────────────────────────────────────────────────────────────────

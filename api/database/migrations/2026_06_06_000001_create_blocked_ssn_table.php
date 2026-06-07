@@ -14,7 +14,7 @@ return new class extends Migration
 
         Schema::create('blocked_ssns', function (Blueprint $table) {
             $table->id();
-            $table->string('pers_nr')->unique();
+            $table->string('ssn')->unique();
             $table->string('reason')->nullable();
             $table->string('added_by')->nullable();
             $table->timestamps();

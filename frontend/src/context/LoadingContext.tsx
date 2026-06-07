@@ -1,5 +1,6 @@
-import { createContext, useCallback, useContext, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { loadingStore } from '@/lib/loadingStore'
 
 interface LoadingContextValue {
   show: (message?: string) => void
@@ -27,6 +28,10 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     depth.current = Math.max(0, depth.current - 1)
     if (depth.current === 0) setState(s => ({ ...s, visible: false }))
   }, [])
+
+  useEffect(() => {
+    loadingStore.register(show, hide)
+  }, [show, hide])
 
   const wrap = useCallback(async <T,>(promise: Promise<T>, message?: string): Promise<T> => {
     show(message)

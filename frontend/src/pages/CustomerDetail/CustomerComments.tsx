@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { AppSelect, SelectOption } from '@/components/AppSelect'
 import { Pencil, Trash2, Plus, Save, X, MessageSquare } from 'lucide-react'
+import { ConfirmDialog } from '@/pages/Gdpr/components/ConfirmDialog'
 import {
   CustomerComment,
   CommentPayload,
@@ -54,7 +55,7 @@ function CommentRow({
         )}
         {comment.initiator && <span>{comment.initiator}</span>}
         <span className="ml-auto">
-          {new Date(comment.created_at).toLocaleDateString('sv-SE', {
+          {new Date(comment.created_at).toLocaleDateString('en-GB', {
             year: 'numeric', month: 'short', day: 'numeric',
             hour: '2-digit', minute: '2-digit',
           })}
@@ -165,6 +166,8 @@ export function CustomerComments({ customerId }: { customerId: number }) {
   const [adding, setAdding]         = useState(false)
   const [editingId, setEditingId]   = useState<number | null>(null)
   const [saving, setSaving]         = useState(false)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [deleting, setDeleting]     = useState(false)
   const [error, setError]           = useState<string | null>(null)
 
   useEffect(() => {
@@ -202,22 +205,19 @@ export function CustomerComments({ customerId }: { customerId: number }) {
     }
   }
 
-  function handleDelete(commentId: number) {
-    toast('You\'re about to delete this comment', {
-      action: {
-        label: 'Delete',
-        onClick: async () => {
-          try {
-            const res = await deleteComment(customerId, commentId)
-            setComments(prev => prev.filter(c => c.id !== commentId))
-            toast.success(res.message)
-          } catch {
-            toast.error('Failed to delete comment')
-          }
-        },
-      },
-      cancel: { label: 'Cancel', onClick: () => {} },
-    })
+  async function handleConfirmDelete() {
+    if (!deletingId) return
+    setDeleting(true)
+    try {
+      const res = await deleteComment(customerId, deletingId)
+      setComments(prev => prev.filter(c => c.id !== deletingId))
+      toast.success(res.message)
+      setDeletingId(null)
+    } catch {
+      toast.error('Failed to delete comment')
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
@@ -271,12 +271,23 @@ export function CustomerComments({ customerId }: { customerId: number }) {
                 key={c.id}
                 comment={c}
                 onEdit={c => setEditingId(c.id)}
-                onDelete={handleDelete}
+                onDelete={id => setDeletingId(id)}
               />
             )
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={deletingId !== null}
+        title="Delete comment"
+        description="This comment will be permanently deleted. This action cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        loading={deleting}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeletingId(null)}
+      />
     </div>
   )
 }
