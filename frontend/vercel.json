@@ -1,3 +1,4 @@
 {
+  "alias": ["sgb-backend-v3.vercel.app"],
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
