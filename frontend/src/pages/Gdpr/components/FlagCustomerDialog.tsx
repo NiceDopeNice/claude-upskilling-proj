@@ -1,66 +1,38 @@
-import { useState } from 'react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AppSelect, SelectOption } from '@/components/AppSelect'
-import { GdprExclusionType, GdprExclusionTypeOption, flagCustomer } from '@/api/gdprApi'
-import { getCustomers, Customer } from '@/api/customerApi'
+import { GdprExclusionType, GdprExclusionTypeOption } from '@/api/gdprApi'
+import { useFlagCustomer } from '@/hooks/useFlagCustomer'
 import {
   Search, Loader2, ShieldAlert, X, CheckCircle2, User,
 } from 'lucide-react'
 
 interface Props {
-  open: boolean
-  exclusionTypes: GdprExclusionTypeOption[]
-  onClose: () => void
-  onSuccess: () => void
+  readonly open: boolean
+  readonly exclusionTypes: GdprExclusionTypeOption[]
+  readonly onClose: () => void
+  readonly onSuccess: () => void
 }
 
 export function FlagCustomerDialog({ open, exclusionTypes, onClose, onSuccess }: Props) {
-  const [search, setSearch]               = useState('')
-  const [results, setResults]             = useState<Customer[]>([])
-  const [searching, setSearching]         = useState(false)
-  const [selected, setSelected]           = useState<Customer | null>(null)
-  const [exclusionType, setExclusionType] = useState<GdprExclusionType | ''>('')
-  const [submitting, setSubmitting]       = useState(false)
-  const [error, setError]                 = useState<string | null>(null)
-
-  async function handleSearch() {
-    if (!search.trim()) return
-    setSearching(true)
-    setResults([])
-    setSelected(null)
-    try {
-      const res = await getCustomers({ search, fields: ['name', 'email', 'customer_no'], per_page: 10 })
-      setResults(res.data)
-    } finally {
-      setSearching(false)
-    }
-  }
-
-  async function handleSubmit() {
-    if (!selected || !exclusionType) return
-    setSubmitting(true)
-    setError(null)
-    try {
-      await flagCustomer(selected.id, exclusionType as GdprExclusionType)
-      handleClose()
-      onSuccess()
-    } catch (e: any) {
-      setError(e?.message ?? 'Failed to flag customer.')
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const {
+    search, setSearch,
+    results,
+    searching,
+    selected, setSelected,
+    exclusionType, setExclusionType,
+    submitting,
+    error,
+    searchCustomers,
+    submit,
+    reset,
+  } = useFlagCustomer(() => { onSuccess() })
 
   function handleClose() {
-    setSearch('')
-    setResults([])
-    setSelected(null)
-    setExclusionType('')
-    setError(null)
+    reset()
     onClose()
   }
 
@@ -90,11 +62,11 @@ export function FlagCustomerDialog({ open, exclusionTypes, onClose, onSuccess }:
                   placeholder="Name, email or ID…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={e => e.key === 'Enter' && searchCustomers()}
                   className="pl-9"
                 />
               </div>
-              <Button variant="outline" onClick={handleSearch} disabled={searching} className="gap-1.5 shrink-0">
+              <Button variant="outline" onClick={searchCustomers} disabled={searching} className="gap-1.5 shrink-0">
                 {searching
                   ? <><Loader2 className="h-4 w-4 animate-spin" /> Searching…</>
                   : <><Search className="h-4 w-4" /> Search</>
@@ -172,7 +144,7 @@ export function FlagCustomerDialog({ open, exclusionTypes, onClose, onSuccess }:
             Cancel
           </Button>
           <Button
-            onClick={handleSubmit}
+            onClick={submit}
             disabled={!selected || !exclusionType || submitting}
             className="gap-1.5"
           >

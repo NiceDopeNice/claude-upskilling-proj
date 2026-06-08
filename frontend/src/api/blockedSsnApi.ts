@@ -1,24 +1,13 @@
 import { http } from './http'
+import { PaginatedResponse } from './customerApi'
 
 export interface BlockedSsn {
-  id: number
-  ssn: string
-  reason: string | null
-  initiator: string | null
-  added_by: number | null
-  date_added: string | null
-}
-
-export interface BlockedSsnMeta {
-  current_page: number
-  per_page: number
-  total: number
-  last_page: number
-}
-
-export interface BlockedSsnListResponse {
-  data: BlockedSsn[]
-  meta: BlockedSsnMeta
+  readonly id: number
+  readonly ssn: string
+  readonly reason: string | null
+  readonly initiator: string | null
+  readonly added_by: number | null
+  readonly date_added: string | null
 }
 
 export interface CreateBlockedSsnPayload {
@@ -28,12 +17,12 @@ export interface CreateBlockedSsnPayload {
   added_by?: number
 }
 
-export function getBlockedSsn(params: { search?: string; page?: number; per_page?: number } = {}): Promise<BlockedSsnListResponse> {
+export function getBlockedSsn(params: { search?: string; page?: number; per_page?: number } = {}): Promise<PaginatedResponse<BlockedSsn>> {
   const q = new URLSearchParams()
   if (params.search)   q.set('search', params.search)
   if (params.page)     q.set('page', String(params.page))
   if (params.per_page) q.set('per_page', String(params.per_page))
-  return http.get<BlockedSsnListResponse>(`/customers/blocked-ssn?${q.toString()}`)
+  return http.get<PaginatedResponse<BlockedSsn>>(`/customers/blocked-ssn?${q.toString()}`)
 }
 
 export function createBlockedSsn(payload: CreateBlockedSsnPayload): Promise<{ data: BlockedSsn }> {

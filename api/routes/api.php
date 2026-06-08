@@ -1,14 +1,14 @@
 <?php
 
-use App\Http\Controllers\BlockedSsnController;
-use App\Http\Controllers\CustomerChangeController;
-use App\Http\Controllers\CustomerCommentController;
-use App\Http\Controllers\CustomerController;
-use App\Http\Controllers\CustomerOrganizationController;
-use App\Http\Controllers\CustomerReminderController;
-use App\Http\Controllers\FamilyMemberController;
-use App\Http\Controllers\GdprCustomerController;
-use App\Http\Controllers\SinfridController;
+use App\Modules\Customer\Controllers\BlockedSsnController;
+use App\Modules\Customer\Controllers\CustomerChangeController;
+use App\Modules\Customer\Controllers\CustomerCommentController;
+use App\Modules\Customer\Controllers\CustomerController;
+use App\Modules\Customer\Controllers\CustomerOrganizationController;
+use App\Modules\Customer\Controllers\CustomerReminderController;
+use App\Modules\Customer\Controllers\FamilyMemberController;
+use App\Modules\Customer\Controllers\GdprCustomerController;
+use App\Modules\Customer\Controllers\SinfridController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', fn () => response()->json(['message' => 'Laravel API is running!']));
@@ -55,6 +55,12 @@ Route::prefix('customers')->group(function () {
     Route::post('/{customerId}/reminders', [CustomerReminderController::class, 'store'])->where('customerId', '[0-9]+');
     Route::post('/{customerId}/reminders/{id}/deactivate', [CustomerReminderController::class, 'deactivate'])->where(['customerId' => '[0-9]+', 'id' => '[0-9]+']);
     Route::get('/{customerId}/reminders/{id}/sends', [CustomerReminderController::class, 'sends'])->where(['customerId' => '[0-9]+', 'id' => '[0-9]+']);
+
+    // Family Members
+    Route::get('/{customerId}/family-members', [FamilyMemberController::class, 'index'])->where('customerId', '[0-9]+');
+    Route::post('/{customerId}/family-members', [FamilyMemberController::class, 'store'])->where('customerId', '[0-9]+');
+    Route::put('/{customerId}/family-members/{id}', [FamilyMemberController::class, 'update'])->where(['customerId' => '[0-9]+', 'id' => '[0-9]+']);
+    Route::delete('/{customerId}/family-members/{id}', [FamilyMemberController::class, 'destroy'])->where(['customerId' => '[0-9]+', 'id' => '[0-9]+']);
 
     // Organization
     Route::get('/{customerId}/organization', [CustomerOrganizationController::class, 'show'])->where('customerId', '[0-9]+');

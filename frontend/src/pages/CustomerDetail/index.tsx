@@ -24,7 +24,8 @@ import {
   PhoneOff, AlertTriangle, Receipt, MailX, MessageSquareX, ShieldAlert,
   Flag, KeyRound, History,
 } from 'lucide-react'
-import { CustomerDetail, UpdateCustomerPayload, BlockedSsnRecord, GdprExclusionType, GdprExclusionTypeOption, getCustomer, updateCustomer, blockSsn, unblockSsn, checkBlockedSsn, flagGdpr, unflagGdpr, getGdprExclusionTypes } from '@/api/customerApi'
+import { CustomerDetail, UpdateCustomerPayload, BlockedSsnRecord, getCustomer, updateCustomer, blockSsn, unblockSsn, checkBlockedSsn } from '@/api/customerApi'
+import { GdprExclusionType, GdprExclusionTypeOption, getExclusionTypes, flagCustomer, unflagCustomer } from '@/api/gdprApi'
 import { toast } from 'sonner'
 import { getSinfridAccount } from '@/api/sinfridApi'
 import { SinfridPanel } from './SinfridPanel'
@@ -225,7 +226,7 @@ export default function CustomerDetailPage() {
     getSinfridAccount(Number(id))
       .then(res => setHasSinfrid(res.data !== null))
       .catch(() => setHasSinfrid(false))
-    getGdprExclusionTypes()
+    getExclusionTypes()
       .then(res => setGdprExclusionTypes(res.data))
       .catch(() => {})
   }, [id])
@@ -348,7 +349,7 @@ export default function CustomerDetailPage() {
     if (!gdprExclusionType) return
     setGdprConfirmSaving(true)
     try {
-      const res = await flagGdpr(detail!.id, gdprExclusionType as GdprExclusionType)
+      const res = await flagCustomer(detail!.id, gdprExclusionType as GdprExclusionType)
       setDetail(prev => prev ? { ...prev, block_gdpr: true } : prev)
       setGdprConfirmMode(null)
       toast.success(res.message)
@@ -362,7 +363,7 @@ export default function CustomerDetailPage() {
   async function confirmUnflagGdpr() {
     setGdprConfirmSaving(true)
     try {
-      const res = await unflagGdpr(detail!.id)
+      const res = await unflagCustomer(detail!.id)
       setDetail(prev => prev ? { ...prev, block_gdpr: false } : prev)
       setGdprConfirmMode(null)
       toast.success(res.message)

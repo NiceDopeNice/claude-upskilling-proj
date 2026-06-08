@@ -6,24 +6,24 @@ export type GdprExclusionType = '2y_after_starter' | 'subscription_end'
 export type GdprBulkAction = 'unflag' | 'anonymize' | 'restore' | 'reject'
 
 export interface GdprCustomer {
-  id: number
-  customer_id: number
-  customer_name: string
-  customer_email: string | null
-  status: GdprStatus
-  exclusion_type: GdprExclusionType
-  flagged_at: string | null
-  anonymized_at: string | null
-  restored_at: string | null
-  requested_by: number | null
-  source: 'manual' | 'system'
-  created_at: string
-  updated_at: string
+  readonly id: number
+  readonly customer_id: number
+  readonly customer_name: string
+  readonly customer_email: string | null
+  readonly status: GdprStatus
+  readonly exclusion_type: GdprExclusionType
+  readonly flagged_at: string | null
+  readonly anonymized_at: string | null
+  readonly restored_at: string | null
+  readonly requested_by: number | null
+  readonly source: 'manual' | 'system'
+  readonly created_at: string
+  readonly updated_at: string
 }
 
 export interface GdprExclusionTypeOption {
-  value: GdprExclusionType
-  label: string
+  readonly value: GdprExclusionType
+  readonly label: string
 }
 
 export interface ListGdprParams {
@@ -32,6 +32,15 @@ export interface ListGdprParams {
   exclusion_type?: GdprExclusionType | ''
   per_page?: number
   page?: number
+}
+
+export interface BulkActionResult {
+  readonly message: string
+  readonly result: {
+    readonly success: number
+    readonly failed: number
+    readonly errors: ReadonlyArray<{ readonly customer_id: number; readonly message: string }>
+  }
 }
 
 export function getGdprCustomers(params: ListGdprParams): Promise<PaginatedResponse<GdprCustomer>> {
@@ -69,11 +78,6 @@ export function restoreCustomer(customerId: number): Promise<{ message: string; 
 
 export function rejectCustomer(customerId: number): Promise<{ message: string; data: GdprCustomer }> {
   return http.post<{ message: string; data: GdprCustomer }>(`/gdpr/${customerId}/reject`, {})
-}
-
-export interface BulkActionResult {
-  message: string
-  result: { success: number; failed: number; errors: { customer_id: number; message: string }[] }
 }
 
 export function bulkGdprAction(action: GdprBulkAction, customerIds: number[]): Promise<BulkActionResult> {

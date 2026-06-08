@@ -1,15 +1,23 @@
 <?php
 
+/**
+ * Upskilling Project
+ *
+ * @package Providers/AppServiceProvider.php
+ * @author John Dagocdocan
+ * @datetime 08/06/2026, 12:00 PM
+ */
+
 namespace App\Providers;
 
-use App\Contracts\Repositories\CustomerRepositoryInterface;
-use App\Contracts\Repositories\GdprCustomerRepositoryInterface;
-use App\Contracts\Services\CustomerServiceInterface;
-use App\Contracts\Services\GdprCustomerServiceInterface;
-use App\Repositories\CustomerRepository;
-use App\Repositories\GdprCustomerRepository;
-use App\Services\CustomerService;
-use App\Services\GdprCustomerService;
+use App\Modules\Customer\Repository\Contracts\CustomerRepositoryInterface;
+use App\Modules\Customer\Repository\CustomerRepository;
+use App\Modules\Customer\Services\Contracts\CustomerServiceInterface;
+use App\Modules\Customer\Services\CustomerService;
+use App\Modules\Customer\Repository\Contracts\GdprCustomerRepositoryInterface;
+use App\Modules\Customer\Repository\GdprCustomerRepository;
+use App\Modules\Customer\Services\Contracts\GdprCustomerServiceInterface;
+use App\Modules\Customer\Services\GdprCustomerService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider

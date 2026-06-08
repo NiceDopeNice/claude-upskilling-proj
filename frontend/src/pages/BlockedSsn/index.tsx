@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
@@ -11,48 +11,38 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { ConfirmDialog } from '@/pages/Gdpr/components/ConfirmDialog'
+import { createBlockedSsn } from '@/api/blockedSsnApi'
+import { useBlockedSsn } from '@/hooks/useBlockedSsn'
+import { formatDate, buildPageButtons } from '@/lib/formatters'
 import {
-  BlockedSsnListResponse,
-  getBlockedSsn, createBlockedSsn, deleteBlockedSsn,
-} from '@/api/blockedSsnApi'
-import {
-  Search, X, Plus, Trash2, ChevronLeft, ChevronRight, ShieldX, Loader2,
+  Search, X, Plus, Trash2, ChevronLeft, ChevronRight, ShieldX,
 } from 'lucide-react'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 
-
-function formatDate(dt: string | null) {
-  if (!dt) return '—'
-  return new Date(dt).toLocaleDateString('sv-SE')
-}
-
-function buildPageButtons(current: number, last: number): (number | '...')[] {
-  if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1)
-  const pages: (number | '...')[] = [1]
-  if (current > 3) pages.push('...')
-  for (let i = Math.max(2, current - 1); i <= Math.min(last - 1, current + 1); i++) pages.push(i)
-  if (current < last - 2) pages.push('...')
-  pages.push(last)
-  return pages
-}
-
 /* ── Add SSN dialog ── */
-function AddSsnDialog({ open, onAdded, onClose }: {
-  open: boolean
-  onAdded: () => void
-  onClose: () => void
-}) {
-  const [ssn, setSsn]           = useState('')
-  const [reason, setReason]     = useState('')
+
+interface AddSsnDialogProps {
+  readonly open: boolean
+  readonly onAdded: () => void
+  readonly onClose: () => void
+}
+
+function AddSsnDialog({ open, onAdded, onClose }: AddSsnDialogProps) {
+  const [ssn, setSsn]               = useState('')
+  const [reason, setReason]         = useState('')
   const [confirming, setConfirming] = useState(false)
-  const [saving, setSaving]     = useState(false)
-  const [error, setError]       = useState<string | null>(null)
+  const [saving, setSaving]         = useState(false)
+  const [error, setError]           = useState<string | null>(null)
 
   function reset() { setSsn(''); setReason(''); setError(null) }
 
-  function handleClose() { if (!saving) { reset(); onClose() } }
+  function handleClose() {
+    if (saving) return
+    reset()
+    onClose()
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -64,16 +54,15 @@ function AddSsnDialog({ open, onAdded, onClose }: {
   async function confirm() {
     setSaving(true)
     try {
-      await createBlockedSsn({
-        ssn:    ssn.trim(),
-        reason: reason.trim() || undefined,
-      })
+      await createBlockedSsn({ ssn: ssn.trim(), reason: reason.trim() || undefined })
       reset()
       onAdded()
-    } catch (err) {
+    } catch (err: unknown) {
       setConfirming(false)
       setError(err instanceof Error ? err.message : 'Failed to add SSN.')
-    } finally { setSaving(false) }
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -136,47 +125,29 @@ function AddSsnDialog({ open, onAdded, onClose }: {
 }
 
 /* ── Page ── */
+
 export default function BlockedSsnPage() {
   const [perPage, setPerPage] = useState(() =>
     Math.max(10, Math.floor((window.innerHeight - 380) / 44))
   )
-  const [data, setData]               = useState<BlockedSsnListResponse | null>(null)
-  const [loading, setLoading]         = useState(true)
-  const [search, setSearch]           = useState('')
-  const [page, setPage]               = useState(1)
-  const [showAdd, setShowAdd]         = useState(false)
+  const {
+    data, loading, deleting,
+    searchInput, setSearchInput,
+    page, setPage,
+    refresh, deleteRecord,
+  } = useBlockedSsn(perPage)
+
+  const [showAdd, setShowAdd]             = useState(false)
   const [pendingDelete, setPendingDelete] = useState<{ id: number; ssn: string } | null>(null)
-  const [deleting, setDeleting]       = useState(false)
-
-  useEffect(() => { setPage(1) }, [perPage])
-
-  const load = useCallback(() => {
-    setLoading(true)
-    getBlockedSsn({ search, page, per_page: perPage })
-      .then(setData)
-      .finally(() => setLoading(false))
-  }, [search, page, perPage])
-
-  useEffect(() => { load() }, [load])
-
-  /* debounce search */
-  const [searchInput, setSearchInput] = useState('')
-  useEffect(() => {
-    const t = setTimeout(() => { setSearch(searchInput); setPage(1) }, 350)
-    return () => clearTimeout(t)
-  }, [searchInput])
-
-  async function handleDelete() {
-    if (!pendingDelete) return
-    setDeleting(true)
-    try {
-      await deleteBlockedSsn(pendingDelete.id)
-      load()
-    } finally { setDeleting(false); setPendingDelete(null) }
-  }
 
   const rows = data?.data ?? []
   const meta = data?.meta ?? null
+
+  async function handleDelete() {
+    if (!pendingDelete) return
+    await deleteRecord(pendingDelete.id)
+    setPendingDelete(null)
+  }
 
   return (
     <div className="max-w-screen-2xl mx-auto px-6 py-8 space-y-5">
@@ -341,11 +312,11 @@ export default function BlockedSsnPage() {
       {/* Add SSN dialog */}
       <AddSsnDialog
         open={showAdd}
-        onAdded={() => { setShowAdd(false); load() }}
+        onAdded={() => { setShowAdd(false); refresh() }}
         onClose={() => setShowAdd(false)}
       />
 
-      {/* Delete confirmation popup */}
+      {/* Delete confirmation */}
       <ConfirmDialog
         open={!!pendingDelete}
         title="Remove blocked SSN"

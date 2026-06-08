@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { useGdpr } from '@/hooks/useGdpr'
-import {
-  GdprBulkAction, GdprExclusionType, GdprStatus,
-  anonymizeCustomer, rejectCustomer, restoreCustomer, unflagCustomer, bulkGdprAction,
-} from '@/api/gdprApi'
+import { GdprExclusionType, GdprStatus } from '@/api/gdprApi'
+import { formatDate, buildPageButtons } from '@/lib/formatters'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -25,18 +23,6 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-
-
-type PendingAction = {
-  type: 'single'
-  action: 'anonymize' | 'restore' | 'reject' | 'unflag'
-  customerId: number
-  customerName: string
-} | {
-  type: 'bulk'
-  action: GdprBulkAction
-  customerIds: number[]
-}
 
 const ACTION_LABELS: Record<string, string> = {
   anonymize: 'Anonymize',
@@ -65,21 +51,6 @@ const TYPE_OPTIONS: { value: GdprExclusionType | ''; label: string }[] = [
   { value: 'subscription_end', label: 'Subscription End' },
 ]
 
-function formatDate(dt: string | null) {
-  if (!dt) return '—'
-  return new Date(dt).toLocaleDateString('sv-SE')
-}
-
-function buildPageButtons(current: number, last: number): (number | '...')[] {
-  if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1)
-  const pages: (number | '...')[] = [1]
-  if (current > 3) pages.push('...')
-  for (let i = Math.max(2, current - 1); i <= Math.min(last - 1, current + 1); i++) pages.push(i)
-  if (current < last - 2) pages.push('...')
-  pages.push(last)
-  return pages
-}
-
 export default function GdprPage() {
   const [perPage, setPerPage] = useState(() =>
     Math.max(10, Math.floor((window.innerHeight - 480) / 48))
@@ -91,11 +62,9 @@ export default function GdprPage() {
     typeFilter, setTypeFilter,
     page, setPage,
     selected, toggleSelect, toggleSelectAll, clearSelected,
-    refresh,
+    pendingAction, actionLoading,
+    confirmSingle, confirmBulk, cancelAction, executeAction,
   } = useGdpr(perPage)
-
-  const [pendingAction, setPendingAction]     = useState<PendingAction | null>(null)
-  const [actionLoading, setActionLoading]     = useState(false)
 
   const rows = data?.data ?? []
   const meta = data?.meta ?? null
@@ -104,41 +73,9 @@ export default function GdprPage() {
     .filter(r => selected.has(r.customer_id))
     .map(r => r.status)
 
-  async function executeAction() {
-    if (!pendingAction) return
-    setActionLoading(true)
-    try {
-      if (pendingAction.type === 'single') {
-        const { action, customerId } = pendingAction
-        if (action === 'anonymize') await anonymizeCustomer(customerId)
-        else if (action === 'restore') await restoreCustomer(customerId)
-        else if (action === 'reject') await rejectCustomer(customerId)
-        else if (action === 'unflag') await unflagCustomer(customerId)
-      } else {
-        await bulkGdprAction(pendingAction.action, pendingAction.customerIds)
-        clearSelected()
-      }
-      refresh()
-    } finally {
-      setActionLoading(false)
-      setPendingAction(null)
-    }
-  }
-
-  function confirmSingle(
-    action: 'anonymize' | 'restore' | 'reject' | 'unflag',
-    customerId: number,
-    customerName: string,
-  ) {
-    setPendingAction({ type: 'single', action, customerId, customerName })
-  }
-
-  function confirmBulk(action: GdprBulkAction) {
-    setPendingAction({ type: 'bulk', action, customerIds: [...selected] })
-  }
-
   const allSelected = rows.length > 0 && rows.every(r => selected.has(r.customer_id))
 
+  // build confirm dialog text from the pending action
   function buildConfirmText(): { title: string; description: string; destructive: boolean } {
     if (!pendingAction) return { title: '', description: '', destructive: false }
     const label = ACTION_LABELS[pendingAction.action] ?? pendingAction.action
@@ -417,7 +354,7 @@ export default function GdprPage() {
         destructive={confirmDestructive}
         loading={actionLoading}
         onConfirm={executeAction}
-        onCancel={() => setPendingAction(null)}
+        onCancel={cancelAction}
       />
     </div>
   )

@@ -2,7 +2,7 @@
 
 namespace App\Traits;
 
-use App\Models\CustomerChange;
+use App\Modules\Customer\Models\CustomerChange;
 
 trait CustomerChangeLogger
 {

@@ -1,17 +1,17 @@
 import { http } from './http'
 
 export interface Customer {
-  id: number
-  customer_no: number
-  first_name: string
-  last_name: string
-  email: string
-  tel: string
-  pers_nr: string
-  adress: string
-  ort: string
-  last_order_date: string | null
-  sinfrid_id: string | null
+  readonly id: number
+  readonly customer_no: number
+  readonly first_name: string
+  readonly last_name: string
+  readonly email: string
+  readonly tel: string
+  readonly pers_nr: string
+  readonly adress: string
+  readonly ort: string
+  readonly last_order_date: string | null
+  readonly sinfrid_id: string | null
 }
 
 export interface CustomerDetail {
@@ -64,12 +64,12 @@ export interface CustomerOrder {
 }
 
 export interface PaginatedResponse<T> {
-  data: T[]
-  meta: {
-    current_page: number
-    per_page: number
-    total: number
-    last_page: number
+  readonly data: T[]
+  readonly meta: {
+    readonly current_page: number
+    readonly per_page: number
+    readonly total: number
+    readonly last_page: number
   }
 }
 
@@ -145,9 +145,9 @@ export function updateCustomer(id: number, payload: UpdateCustomerPayload): Prom
 }
 
 export interface BlockedSsnRecord {
-  id: number
-  ssn: string
-  reason: string | null
+  readonly id: number
+  readonly ssn: string
+  readonly reason: string | null
 }
 
 export function blockSsn(ssn: string, reason?: string): Promise<{ message: string; data: BlockedSsnRecord }> {
@@ -276,27 +276,6 @@ export function deactivateReminder(customerId: number, reminderId: number, reaso
 
 export function getReminderSends(customerId: number, reminderId: number): Promise<{ data: ReminderSend[] }> {
   return http.get<{ data: ReminderSend[] }>(`/customers/${customerId}/reminders/${reminderId}/sends`)
-}
-
-// ── GDPR ────────────────────────────────────────────────────────────────────
-
-export type GdprExclusionType = '2y_after_starter' | 'subscription_end'
-
-export interface GdprExclusionTypeOption {
-  value: GdprExclusionType
-  label: string
-}
-
-export function getGdprExclusionTypes(): Promise<{ data: GdprExclusionTypeOption[] }> {
-  return http.get<{ data: GdprExclusionTypeOption[] }>('/gdpr/exclusion-types')
-}
-
-export function flagGdpr(customerId: number, exclusionType: GdprExclusionType): Promise<{ message: string }> {
-  return http.post<{ message: string }>('/gdpr/flag', { customer_id: customerId, exclusion_type: exclusionType })
-}
-
-export function unflagGdpr(customerId: number): Promise<{ message: string }> {
-  return http.delete<{ message: string }>(`/gdpr/${customerId}`)
 }
 
 // ── Organization ────────────────────────────────────────────────────────────
