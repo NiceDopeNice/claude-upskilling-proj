@@ -52,11 +52,13 @@ class CustomerService implements CustomerServiceInterface
      * @param int $customerId
      * @param int $perPage
      * @param int $page
+     * @param string|null $dateFrom
+     * @param string|null $dateTo
      * @return LengthAwarePaginator
      */
-    public function orders(int $customerId, int $perPage, int $page): LengthAwarePaginator
+    public function orders(int $customerId, int $perPage, int $page, ?string $dateFrom = null, ?string $dateTo = null): LengthAwarePaginator
     {
-        return $this->repository->getOrders($customerId, $perPage, $page);
+        return $this->repository->getOrders($customerId, $perPage, $page, $dateFrom, $dateTo);
     }
 
     /**
@@ -64,11 +66,13 @@ class CustomerService implements CustomerServiceInterface
      * @param string $state
      * @param int $perPage
      * @param int $page
+     * @param string|null $dateFrom
+     * @param string|null $dateTo
      * @return LengthAwarePaginator
      */
-    public function ordersByState(int $customerId, string $state, int $perPage, int $page): LengthAwarePaginator
+    public function ordersByState(int $customerId, string $state, int $perPage, int $page, ?string $dateFrom = null, ?string $dateTo = null): LengthAwarePaginator
     {
-        return $this->repository->getOrdersByState($customerId, $state, $perPage, $page);
+        return $this->repository->getOrdersByState($customerId, $state, $perPage, $page, $dateFrom, $dateTo);
     }
 
     /**

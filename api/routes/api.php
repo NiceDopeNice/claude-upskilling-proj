@@ -8,7 +8,10 @@ use App\Modules\Customer\Controllers\CustomerOrganizationController;
 use App\Modules\Customer\Controllers\CustomerReminderController;
 use App\Modules\Customer\Controllers\FamilyMemberController;
 use App\Modules\Customer\Controllers\GdprCustomerController;
+use App\Modules\Customer\Controllers\InsurancePolicyController;
+use App\Modules\Customer\Controllers\OrderController;
 use App\Modules\Customer\Controllers\SinfridController;
+use App\Modules\Customer\Controllers\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', fn () => response()->json(['message' => 'Laravel API is running!']));
@@ -23,6 +26,20 @@ Route::prefix('gdpr')->group(function () {
     Route::post('/{customerId}/anonymize', [GdprCustomerController::class, 'anonymize'])->where('customerId', '[0-9]+');
     Route::post('/{customerId}/restore', [GdprCustomerController::class, 'restore'])->where('customerId', '[0-9]+');
     Route::post('/{customerId}/reject', [GdprCustomerController::class, 'reject'])->where('customerId', '[0-9]+');
+});
+
+// Orders (standalone — not nested under customer to avoid collision with /orders/{state})
+Route::prefix('orders')->group(function () {
+    Route::get('/{orderId}', [OrderController::class, 'show'])->where('orderId', '[0-9]+');
+    Route::post('/{orderId}/cancel', [OrderController::class, 'cancel'])->where('orderId', '[0-9]+');
+    Route::post('/{orderId}/adjust', [OrderController::class, 'adjust'])->where('orderId', '[0-9]+');
+});
+
+// Subscriptions (standalone)
+Route::prefix('subscriptions')->group(function () {
+    Route::get('/{subId}', [SubscriptionController::class, 'show'])->where('subId', '[0-9]+');
+    Route::put('/{subId}/next-shipment', [SubscriptionController::class, 'updateNextShipment'])->where('subId', '[0-9]+');
+    Route::post('/{subId}/deactivate', [SubscriptionController::class, 'deactivate'])->where('subId', '[0-9]+');
 });
 
 Route::prefix('customers')->group(function () {
@@ -40,6 +57,11 @@ Route::prefix('customers')->group(function () {
     Route::get('/{id}/orders', [CustomerController::class, 'orders'])->where('id', '[0-9]+');
     Route::get('/{id}/orders/{state}', [CustomerController::class, 'ordersByState'])->where('id', '[0-9]+');
     Route::get('/{id}/subscriptions/{state}', [CustomerController::class, 'subscriptions'])->where('id', '[0-9]+');
+
+    // Insurance Policies
+    Route::get('/{customerId}/insurance-policies', [InsurancePolicyController::class, 'index'])->where('customerId', '[0-9]+');
+    Route::post('/{customerId}/insurance-policies', [InsurancePolicyController::class, 'store'])->where('customerId', '[0-9]+');
+    Route::post('/{customerId}/insurance-policies/{policyId}/cancel', [InsurancePolicyController::class, 'cancel'])->where('customerId', '[0-9]+');
 
     // Changes
     Route::get('/{customerId}/changes', [CustomerChangeController::class, 'index'])->where('customerId', '[0-9]+');

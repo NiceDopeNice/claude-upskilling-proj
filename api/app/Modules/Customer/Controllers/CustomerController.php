@@ -88,10 +88,12 @@ class CustomerController extends Controller
         $customer = $this->service->detail($id);
         if (!$customer) return response()->json(['message' => 'Customer not found'], 404);
 
-        $perPage = (int) ($request->query('per_page', 20));
-        $page    = (int) ($request->query('page', 1));
+        $perPage   = (int) ($request->query('per_page', 20));
+        $page      = (int) ($request->query('page', 1));
+        $dateFrom  = $request->query('date_from');
+        $dateTo    = $request->query('date_to');
 
-        return CustomerOrderResource::collection($this->service->orders($id, $perPage, $page));
+        return CustomerOrderResource::collection($this->service->orders($id, $perPage, $page, $dateFrom, $dateTo));
     }
 
     /**
@@ -109,10 +111,12 @@ class CustomerController extends Controller
         $customer = $this->service->detail($id);
         if (!$customer) return response()->json(['message' => 'Customer not found'], 404);
 
-        $perPage = (int) ($request->query('per_page', 20));
-        $page    = (int) ($request->query('page', 1));
+        $perPage  = (int) ($request->query('per_page', 20));
+        $page     = (int) ($request->query('page', 1));
+        $dateFrom = $request->query('date_from');
+        $dateTo   = $request->query('date_to');
 
-        $orders = $this->service->ordersByState($id, $state, $perPage, $page);
+        $orders = $this->service->ordersByState($id, $state, $perPage, $page, $dateFrom, $dateTo);
 
         // Deleted orders have additional cancellation fields — use a dedicated resource
         return $state === 'deleted'

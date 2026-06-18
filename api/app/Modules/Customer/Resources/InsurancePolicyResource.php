@@ -27,6 +27,8 @@ class InsurancePolicyResource extends JsonResource
             'partner_reference' => $this->partner_reference,
             'relationship'      => $this->relationship instanceof \BackedEnum ? $this->relationship->value : $this->relationship,
             'status'            => $this->status,
+            'cancel_reason'     => $this->cancel_reason ?? null,
+            'cancelled_at'      => $this->cancelled_at ?? null,
             'source'            => $this->source,
             'created_at'        => $this->created_at?->toDateTimeString(),
         ];

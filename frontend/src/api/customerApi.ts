@@ -306,14 +306,22 @@ export function upsertOrganization(customerId: number, payload: OrganizationPayl
 
 // ── Orders ──────────────────────────────────────────────────────────────────
 
+export interface CustomerOrdersParams {
+  page?: number
+  per_page?: number
+  date_from?: string
+  date_to?: string
+}
+
 export function getCustomerOrders(
   id: number,
-  page = 1,
-  perPage = 20,
+  params: CustomerOrdersParams = {},
 ): Promise<PaginatedResponse<CustomerOrder>> {
-  return http.get<PaginatedResponse<CustomerOrder>>(
-    `/customers/${id}/orders?page=${page}&per_page=${perPage}`,
-  )
+  const { page = 1, per_page = 20, date_from, date_to } = params
+  const qs = new URLSearchParams({ page: String(page), per_page: String(per_page) })
+  if (date_from) qs.set('date_from', date_from)
+  if (date_to) qs.set('date_to', date_to)
+  return http.get<PaginatedResponse<CustomerOrder>>(`/customers/${id}/orders?${qs.toString()}`)
 }
 
 // ── Orders by state ──────────────────────────────────────────────────────────
@@ -328,11 +336,14 @@ export interface CustomerOrderApproved {
   total: number
   payment_method: string | null
   ref: string | null
+  ref1: string | null
   prod_id: number | null
   subscription_id: number | null
-  is_processed: number
-  is_shipped: number
-  is_paid: number
+  origin: string | null
+  return_type: string | null
+  is_processed: boolean
+  is_shipped: boolean
+  is_paid: boolean
   state: 'approved'
 }
 
@@ -345,8 +356,11 @@ export interface CustomerOrderDeleted {
   total: number
   payment_method: string | null
   ref: string | null
+  ref1: string | null
   prod_id: number | null
   subscription_id: number | null
+  origin: string | null
+  return_type: string | null
   cancel_reason: string | null
   cancel_category: string | null
   cancel_reception: string | null
@@ -360,9 +374,14 @@ export function getCustomerOrdersByState(
   state: OrderState,
   page = 1,
   perPage = 20,
+  dateFrom?: string,
+  dateTo?: string,
 ): Promise<PaginatedResponse<CustomerOrderByState>> {
+  const qs = new URLSearchParams({ page: String(page), per_page: String(perPage) })
+  if (dateFrom) qs.set('date_from', dateFrom)
+  if (dateTo) qs.set('date_to', dateTo)
   return http.get<PaginatedResponse<CustomerOrderByState>>(
-    `/customers/${id}/orders/${state}?page=${page}&per_page=${perPage}`,
+    `/customers/${id}/orders/${state}?${qs.toString()}`,
   )
 }
 

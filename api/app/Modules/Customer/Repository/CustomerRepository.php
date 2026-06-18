@@ -184,17 +184,30 @@ class CustomerRepository implements CustomerRepositoryInterface
      * @param int $customerId
      * @param int $perPage
      * @param int $page
+     * @param string|null $dateFrom
+     * @param string|null $dateTo
      * @return LengthAwarePaginator
      */
-    public function getOrders(int $customerId, int $perPage, int $page): LengthAwarePaginator
+    public function getOrders(int $customerId, int $perPage, int $page, ?string $dateFrom = null, ?string $dateTo = null): LengthAwarePaginator
     {
-        return DB::table('orders')
-            ->select(['id', 'date_added', 'date_shipped', 'date_paid', 'total',
-                      'payment_method', 'is_processed', 'is_shipped', 'is_paid',
-                      'ref', 'prod_id', 'subscription_id'])
-            ->where('by_user', $customerId)
-            ->orderBy('date_added', 'desc')
-            ->paginate($perPage, ['*'], 'page', $page);
+        $query = DB::table('orders')
+            ->select([
+                'id', 'date_added', 'date_shipped', 'date_paid', 'total',
+                'payment_method', 'is_processed', 'is_shipped', 'is_paid',
+                'ref', 'ref1', 'prod_id', 'subscription_id', 'origin',
+                DB::raw("(SELECT key_2 FROM `log` WHERE type='return_order' AND key_1='success' AND key_3=orders.id ORDER BY id DESC LIMIT 1) as return_type"),
+            ])
+            ->where('by_user', $customerId);
+
+        if ($dateFrom) {
+            $query->where('date_added', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->where('date_added', '<=', $dateTo . ' 23:59:59');
+        }
+
+        return $query->orderBy('date_added', 'desc')->paginate($perPage, ['*'], 'page', $page);
     }
 
     /**
@@ -202,9 +215,11 @@ class CustomerRepository implements CustomerRepositoryInterface
      * @param string $state
      * @param int $perPage
      * @param int $page
+     * @param string|null $dateFrom
+     * @param string|null $dateTo
      * @return LengthAwarePaginator
      */
-    public function getOrdersByState(int $customerId, string $state, int $perPage, int $page): LengthAwarePaginator
+    public function getOrdersByState(int $customerId, string $state, int $perPage, int $page, ?string $dateFrom = null, ?string $dateTo = null): LengthAwarePaginator
     {
         $table = match ($state) {
             'deleted'  => 'orders_deleted',
@@ -217,7 +232,7 @@ class CustomerRepository implements CustomerRepositoryInterface
             return new LengthAwarePaginator([], 0, $perPage, $page);
         }
 
-        $select = ['id', 'date_added', 'date_shipped', 'total', 'payment_method', 'ref', 'prod_id', 'subscription_id'];
+        $select = ['id', 'date_added', 'date_shipped', 'total', 'payment_method', 'ref', 'ref1', 'prod_id', 'subscription_id', 'origin'];
 
         if ($state === 'approved') {
             $select = array_merge($select, ['date_paid', 'is_processed', 'is_shipped', 'is_paid']);
@@ -227,11 +242,21 @@ class CustomerRepository implements CustomerRepositoryInterface
             $select = array_merge($select, ['date_deleted', 'date_paid', 'cancel_reason', 'cancel_category', 'cancel_reception']);
         }
 
-        return DB::table($table)
-            ->select($select)
-            ->where('by_user', $customerId)
-            ->orderBy('date_added', 'desc')
-            ->paginate($perPage, ['*'], 'page', $page);
+        $query = DB::table($table)
+            ->select(array_merge($select, [
+                DB::raw("(SELECT key_2 FROM `log` WHERE type='return_order' AND key_1='success' AND key_3={$table}.id ORDER BY id DESC LIMIT 1) as return_type"),
+            ]))
+            ->where('by_user', $customerId);
+
+        if ($dateFrom) {
+            $query->where('date_added', '>=', $dateFrom);
+        }
+
+        if ($dateTo) {
+            $query->where('date_added', '<=', $dateTo . ' 23:59:59');
+        }
+
+        return $query->orderBy('date_added', 'desc')->paginate($perPage, ['*'], 'page', $page);
     }
 
     /**

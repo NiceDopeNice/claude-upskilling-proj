@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -6,12 +7,17 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import {
   CustomerOrderByState, CustomerOrderDeleted, OrderState,
   getCustomerOrdersByState,
   PaginatedResponse,
 } from '@/api/customerApi'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+
+interface Props {
+  readonly customerId: number
+}
 
 function buildPageButtons(current: number, last: number): (number | '...')[] {
   if (last <= 7) return Array.from({ length: last }, (_, i) => i + 1)
@@ -47,22 +53,26 @@ function StatusBadge({ row }: { row: CustomerOrderByState }) {
   return <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground border border-border">Pending</span>
 }
 
-export function CustomerOrders({ customerId }: { customerId: number }) {
-  const [state, setState]   = useState<OrderState>('approved')
-  const [page, setPage]     = useState(1)
+export function CustomerOrders({ customerId }: Props) {
+  const navigate = useNavigate()
+
+  const [state, setState]     = useState<OrderState>('approved')
+  const [page, setPage]       = useState(1)
   const [perPage, setPerPage] = useState(20)
-  const [data, setData]     = useState<PaginatedResponse<CustomerOrderByState> | null>(null)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo]   = useState('')
+  const [data, setData]       = useState<PaginatedResponse<CustomerOrderByState> | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError]   = useState<string | null>(null)
+  const [error, setError]     = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
     setError(null)
-    getCustomerOrdersByState(customerId, state, page, perPage)
+    getCustomerOrdersByState(customerId, state, page, perPage, dateFrom || undefined, dateTo || undefined)
       .then(setData)
       .catch(() => setError('Failed to load orders.'))
       .finally(() => setLoading(false))
-  }, [customerId, state, page, perPage])
+  }, [customerId, state, page, perPage, dateFrom, dateTo])
 
   function switchState(s: OrderState) { setState(s); setPage(1) }
 
@@ -73,22 +83,43 @@ export function CustomerOrders({ customerId }: { customerId: number }) {
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       {/* Header + state tabs */}
-      <div className="border-b border-border px-5 py-3 flex items-center justify-between">
+      <div className="border-b border-border px-5 py-3 flex items-center justify-between flex-wrap gap-2">
         <h3 className="text-sm font-semibold">Orders</h3>
-        <div className="flex gap-1">
-          {STATES.map(s => (
-            <button
-              key={s.key}
-              onClick={() => switchState(s.key)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
-                state === s.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Date range filters */}
+          <div className="flex items-center gap-1">
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={e => { setDateFrom(e.target.value); setPage(1) }}
+              className="h-7 text-xs w-[130px]"
+              placeholder="From"
+            />
+            <span className="text-xs text-muted-foreground">–</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={e => { setDateTo(e.target.value); setPage(1) }}
+              className="h-7 text-xs w-[130px]"
+              placeholder="To"
+            />
+          </div>
+          {/* State tabs */}
+          <div className="flex gap-1">
+            {STATES.map(s => (
+              <button
+                key={s.key}
+                onClick={() => switchState(s.key)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  state === s.key
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -128,8 +159,14 @@ export function CustomerOrders({ customerId }: { customerId: number }) {
           ) : (
             rows.map(row => {
               const del = row as CustomerOrderDeleted
+              // Only approved orders in the main orders table are navigable to detail
+              const isNavigable = row.state !== 'deleted'
               return (
-                <TableRow key={row.id} className="transition-colors hover:bg-muted/40">
+                <TableRow
+                  key={row.id}
+                  className={`transition-colors hover:bg-muted/40 ${isNavigable ? 'cursor-pointer' : ''}`}
+                  onClick={() => isNavigable && navigate(`/orders/${row.id}`)}
+                >
                   <TableCell className="py-3 font-mono text-xs text-muted-foreground">{row.id}</TableCell>
                   <TableCell className="py-3 whitespace-nowrap">{fmt(row.date_added)}</TableCell>
                   {state === 'deleted' && (
@@ -177,7 +214,7 @@ export function CustomerOrders({ customerId }: { customerId: number }) {
                 <button
                   className="h-7 w-7 rounded border border-border hover:bg-muted disabled:opacity-40 transition-colors flex items-center justify-center"
                   disabled={page <= 1}
-                  onClick={() => setPage(p => p - 1)}
+                  onClick={e => { e.stopPropagation(); setPage(p => p - 1) }}
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
                 </button>
@@ -186,7 +223,7 @@ export function CustomerOrders({ customerId }: { customerId: number }) {
                     ? <span key={`e-${i}`} className="h-7 w-7 flex items-center justify-center text-xs">…</span>
                     : <button
                         key={p}
-                        onClick={() => setPage(p as number)}
+                        onClick={e => { e.stopPropagation(); setPage(p as number) }}
                         className={`h-7 w-7 rounded text-xs font-medium flex items-center justify-center transition-colors ${
                           p === page ? 'bg-primary text-primary-foreground' : 'border border-border hover:bg-muted'
                         }`}
@@ -195,7 +232,7 @@ export function CustomerOrders({ customerId }: { customerId: number }) {
                 <button
                   className="h-7 w-7 rounded border border-border hover:bg-muted disabled:opacity-40 transition-colors flex items-center justify-center"
                   disabled={page >= meta.last_page}
-                  onClick={() => setPage(p => p + 1)}
+                  onClick={e => { e.stopPropagation(); setPage(p => p + 1) }}
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
                 </button>

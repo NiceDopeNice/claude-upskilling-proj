@@ -34,9 +34,16 @@ class CustomerOrderResource extends JsonResource
             'total'           => round((float) ($this->total ?? 0), 2),
             'payment_method'  => $this->payment_method,
             'status'          => $status,
+            'is_shipped'      => (bool) ($this->is_shipped ?? false),
+            'is_paid'         => (bool) ($this->is_paid ?? false),
+            'is_processed'    => (bool) ($this->is_processed ?? false),
             'ref'             => $this->ref,
+            'ref1'            => $this->ref1 ?? null,
             'prod_id'         => $this->prod_id,
             'subscription_id' => $this->subscription_id,
+            'origin'          => $this->origin ?? null,
+            'return_type'     => $this->return_type ?? null,
+            'state'           => 'approved',
         ];
     }
 }

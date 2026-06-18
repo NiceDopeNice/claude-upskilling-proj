@@ -3,6 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { CommentsPanel } from './CustomerComments'
 import { CustomerReminders } from './CustomerReminders'
 import { CustomerOrganization } from './CustomerOrganization'
+import { CustomerOrders } from './CustomerOrders'
+import { CustomerSubscriptions } from './CustomerSubscriptions'
+import { InsurancePoliciesPanel } from './InsurancePoliciesPanel'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
@@ -20,7 +23,7 @@ import {
   Calendar, Copy, Check, ShieldCheck, ShieldX,
   User, Truck, CreditCard as CardIcon, Loader2,
   ChevronLeft, ChevronRight, ChevronDown,
-  Crown, Cake, AlertCircle, Users, HeartPulse,
+  Crown, Cake, AlertCircle, Users, HeartPulse, ShieldPlus,
   PhoneOff, AlertTriangle, Receipt, MailX, MessageSquareX, ShieldAlert,
   Flag, KeyRound, History,
 } from 'lucide-react'
@@ -205,9 +208,10 @@ export default function CustomerDetailPage() {
   const [flagsSaving, setFlagsSaving]           = useState(false)
   const [sinfridOpen, setSinfridOpen]           = useState(false)
   const orgHoverTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
-  const [hasSinfrid, setHasSinfrid]       = useState(false)
-  const [commentsOpen, setCommentsOpen]   = useState(false)
-  const [changesOpen, setChangesOpen]     = useState(false)
+  const [hasSinfrid, setHasSinfrid]           = useState(false)
+  const [commentsOpen, setCommentsOpen]       = useState(false)
+  const [changesOpen, setChangesOpen]         = useState(false)
+  const [insuranceOpen, setInsuranceOpen]     = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -755,7 +759,13 @@ export default function CustomerDetailPage() {
         )}
       </aside>
 
-      <div className="customer-main flex-1 min-w-0 bg-muted/30" />
+      <div className="customer-main flex-1 min-w-0 bg-muted/30 overflow-y-auto p-6 space-y-6">
+        <CustomerOrders customerId={detail.id} />
+        <CustomerSubscriptions customerId={detail.id} />
+        {insuranceOpen && (
+          <InsurancePoliciesPanel customerId={detail.id} />
+        )}
+      </div>
       </div>{/* /customer-body */}
 
       {/* Floating buttons — fixed to viewport right edge */}
@@ -810,6 +820,21 @@ export default function CustomerDetailPage() {
             </div>
           </div>
         )}
+        <div className="relative group cursor-pointer">
+          <button
+            onClick={() => setInsuranceOpen(v => !v)}
+            className={`flex items-center justify-center rounded-l-xl border border-r-0 shadow-sm transition-all p-2.5 ${
+              insuranceOpen
+                ? 'bg-emerald-200 hover:bg-emerald-300 text-emerald-700 border-emerald-300'
+                : 'bg-emerald-100 hover:bg-emerald-200 active:bg-emerald-300 text-emerald-600 border-emerald-200'
+            }`}
+          >
+            <ShieldPlus className="h-5 w-5" />
+          </button>
+          <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2 py-1 rounded-md bg-popover border border-border text-foreground text-xs shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150">
+            Insurance Policies
+          </div>
+        </div>
       </div>
 
       <Dialog open={remindersOpen} onOpenChange={setRemindersOpen}>

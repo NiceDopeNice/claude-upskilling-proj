@@ -37,18 +37,22 @@ interface CustomerServiceInterface
      * @param int $customerId
      * @param int $perPage
      * @param int $page
+     * @param string|null $dateFrom
+     * @param string|null $dateTo
      * @return LengthAwarePaginator
      */
-    public function orders(int $customerId, int $perPage, int $page): LengthAwarePaginator;
+    public function orders(int $customerId, int $perPage, int $page, ?string $dateFrom = null, ?string $dateTo = null): LengthAwarePaginator;
 
     /**
      * @param int $customerId
      * @param string $state
      * @param int $perPage
      * @param int $page
+     * @param string|null $dateFrom
+     * @param string|null $dateTo
      * @return LengthAwarePaginator
      */
-    public function ordersByState(int $customerId, string $state, int $perPage, int $page): LengthAwarePaginator;
+    public function ordersByState(int $customerId, string $state, int $perPage, int $page, ?string $dateFrom = null, ?string $dateTo = null): LengthAwarePaginator;
 
     /**
      * @param int $customerId
