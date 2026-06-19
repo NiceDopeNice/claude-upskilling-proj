@@ -449,7 +449,7 @@ export default function CustomerDetailPage() {
 
       {/* ── Body ── */}
       <div className="customer-body flex flex-1 overflow-hidden">
-      <aside className={`customer-sidebar shrink-0 bg-card border-r border-border flex flex-col transition-all duration-200 ${sidebarCollapsed ? 'w-12 overflow-hidden' : 'w-72 overflow-y-auto'}`}>
+      <aside className={`customer-sidebar shrink-0 bg-card border-r border-border flex flex-col transition-all duration-200 ${sidebarCollapsed ? 'w-12 overflow-hidden' : 'w-72 overflow-hidden'}`}>
 
         {/* ── Collapsed icon strip ── */}
         {sidebarCollapsed && (
@@ -674,7 +674,7 @@ export default function CustomerDetailPage() {
 
             {/* ── View mode — Facebook-style info sections ── */}
             {!editing && (
-              <div className="flex-1 divide-y divide-border/50">
+              <div className="flex-1 overflow-y-auto divide-y divide-border/50">
 
                 {/* Contact Info */}
                 <div className="px-5 py-4">
