@@ -37,8 +37,8 @@ export default function Customers() {
 
   return (
     <div>
-      <div className="max-w-screen-2xl mx-auto px-6 py-8 space-y-5">
-        <h1 className="text-2xl font-bold tracking-tight">Customers</h1>
+      <div className="px-5 py-5 space-y-4">
+        <h1 className="text-base font-semibold tracking-tight">Customers</h1>
 
         <CustomerSearch
           mode={mode}

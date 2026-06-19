@@ -3,3 +3,4 @@ customer_profile.sql
 customer_profile_extras.sql
 tables_export.sql
 frontend/.env
+.vercel

@@ -17,8 +17,9 @@ import {
 import {
   HeartPulse, Users, Bell,
   Plus, Trash2, CheckCircle2, AlertTriangle, AlertCircle,
-  Calendar, X, Loader2, Pencil, Shield, FileText, Ban, Power, PowerOff,
+  Calendar, X, Loader2, Pencil, Shield, FileText, Ban, Power, PowerOff, ShieldPlus,
 } from 'lucide-react'
+import { InsurancePoliciesPanel } from './InsurancePoliciesPanel'
 
 /* ── helpers ── */
 function fmt(dt: string | null) {
@@ -126,13 +127,14 @@ const LANG_OPTIONS: SelectOption[] = [
 ]
 
 /* ── tabs ── */
-type PanelTab = 'account' | 'alarms' | 'family' | 'policies'
+type PanelTab = 'account' | 'alarms' | 'family' | 'policies' | 'insurance'
 
 const PANEL_TABS: { key: PanelTab; icon: React.ElementType; label: string }[] = [
-  { key: 'account',  icon: HeartPulse, label: 'Account'  },
-  { key: 'alarms',   icon: Bell,       label: 'Alarms'   },
-  { key: 'family',   icon: Users,      label: 'Family'   },
-  { key: 'policies', icon: FileText,   label: 'Policies' },
+  { key: 'account',   icon: HeartPulse,  label: 'Account'   },
+  { key: 'alarms',    icon: Bell,        label: 'Alarms'    },
+  { key: 'family',    icon: Users,       label: 'Family'    },
+  { key: 'policies',  icon: FileText,    label: 'Policies'  },
+  { key: 'insurance', icon: ShieldPlus,  label: 'Insurance' },
 ]
 
 /* ── shared field component ── */
@@ -932,7 +934,7 @@ export function SinfridPanel({ open, onClose, customerId, customerName }: {
       />
 
       {/* Slide-over panel */}
-      <div className={`fixed top-0 right-0 h-full w-[440px] z-[999] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
+      <div className={`fixed top-0 right-0 h-full w-[640px] z-[999] bg-card border-l border-border shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
         open ? 'translate-x-0' : 'translate-x-full'
       }`}>
 
@@ -981,10 +983,11 @@ export function SinfridPanel({ open, onClose, customerId, customerName }: {
             </div>
           ) : (
             <>
-              {tab === 'account'  && <AccountTab  account={account} customerId={customerId} onRefresh={loadAccount} onClose={onClose} />}
-              {tab === 'alarms'   && <AlarmsTab   customerId={customerId} />}
-              {tab === 'family'   && <FamilyTab   customerId={customerId} />}
-              {tab === 'policies' && <PoliciesTab customerId={customerId} />}
+              {tab === 'account'   && <AccountTab  account={account} customerId={customerId} onRefresh={loadAccount} onClose={onClose} />}
+              {tab === 'alarms'    && <AlarmsTab   customerId={customerId} />}
+              {tab === 'family'    && <FamilyTab   customerId={customerId} />}
+              {tab === 'policies'  && <PoliciesTab customerId={customerId} />}
+              {tab === 'insurance' && <InsurancePoliciesPanel customerId={customerId} />}
             </>
           )}
         </div>

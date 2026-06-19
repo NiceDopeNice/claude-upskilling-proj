@@ -2,8 +2,8 @@ import { LayoutDashboard } from 'lucide-react'
 
 export default function Dashboard() {
   return (
-    <div className="max-w-screen-2xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold tracking-tight mb-8">Dashboard</h1>
+    <div className="px-5 py-5">
+      <h1 className="text-base font-semibold tracking-tight mb-6">Dashboard</h1>
 
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mb-4">

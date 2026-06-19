@@ -150,12 +150,12 @@ export default function BlockedSsnPage() {
   }
 
   return (
-    <div className="max-w-screen-2xl mx-auto px-6 py-8 space-y-5">
+    <div className="px-5 py-5 space-y-4">
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <h1 className="text-base font-semibold tracking-tight flex items-center gap-2">
             <ShieldX className="h-6 w-6 text-destructive" />
             Blocked SSN
           </h1>

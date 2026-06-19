@@ -9,6 +9,7 @@ import CustomerDetailPage from './pages/CustomerDetail'
 import GdprPage from './pages/Gdpr'
 import BlockedSsnPage from './pages/BlockedSsn'
 import OrderDetailPage from './pages/Orders'
+import SubscriptionDetailPage from './pages/SubscriptionDetail'
 import './App.css'
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
               <Route path="/gdpr" element={<GdprPage />} />
               <Route path="/customers/blocked-ssn" element={<BlockedSsnPage />} />
               <Route path="/orders/:id" element={<OrderDetailPage />} />
+              <Route path="/subscriptions/:id" element={<SubscriptionDetailPage />} />
             </Routes>
           </Layout>
         </LoadingProvider>
