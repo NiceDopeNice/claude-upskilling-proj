@@ -5,7 +5,6 @@ import { CustomerReminders } from './CustomerReminders'
 import { CustomerOrganization } from './CustomerOrganization'
 import { CustomerOrders } from './CustomerOrders'
 import { CustomerSubscriptions } from './CustomerSubscriptions'
-import { InsurancePoliciesPanel } from './InsurancePoliciesPanel'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
@@ -23,7 +22,7 @@ import {
   Calendar, Copy, Check, ShieldCheck, ShieldX,
   User, Truck, CreditCard as CardIcon, Loader2,
   ChevronLeft, ChevronRight, ChevronDown,
-  Crown, Cake, AlertCircle, Users, HeartPulse, ShieldPlus,
+  Crown, Cake, AlertCircle, Users, HeartPulse,
   PhoneOff, AlertTriangle, Receipt, MailX, MessageSquareX, ShieldAlert,
   Flag, KeyRound, History,
 } from 'lucide-react'
@@ -129,25 +128,24 @@ function SidebarSelect({ label, value, onChange, options }: {
   )
 }
 
-/* ── contact row (always visible, shows empty placeholder) ── */
+/* ── info row — Facebook "About" style ── */
 
-function ContactRow({ icon: Icon, value, placeholder, accent }: {
+function InfoRow({ icon: Icon, value, label, mono }: {
   icon: React.ElementType
   value?: string | null
-  placeholder: string
-  accent?: boolean
+  label: string
+  mono?: boolean
 }) {
-  const empty = !value
+  if (!value) return null
   return (
-    <div className="flex items-center gap-2 py-[4px]">
-      <Icon className={`h-4 w-4 shrink-0 ${empty ? 'text-muted-foreground/40' : 'text-muted-foreground'}`} />
-      <span className={`leading-snug ${
-        empty    ? 'text-xs text-muted-foreground/50 italic' :
-        accent   ? 'text-base text-green-600 font-medium' :
-                   'text-xs text-foreground'
-      }`}>
-        {empty ? placeholder : value}
-      </span>
+    <div className="flex items-center gap-3 py-2">
+      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className={`text-xs text-foreground truncate ${mono ? 'font-mono text-[11px]' : ''}`}>{value}</div>
+        <div className="text-[10px] text-muted-foreground mt-0.5">{label}</div>
+      </div>
     </div>
   )
 }
@@ -211,7 +209,6 @@ export default function CustomerDetailPage() {
   const [hasSinfrid, setHasSinfrid]           = useState(false)
   const [commentsOpen, setCommentsOpen]       = useState(false)
   const [changesOpen, setChangesOpen]         = useState(false)
-  const [insuranceOpen, setInsuranceOpen]     = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -450,166 +447,57 @@ export default function CustomerDetailPage() {
   return (
     <div className="customer-detail flex flex-col h-full min-h-screen relative">
 
-      {/* ── Profile Header ── */}
-      <div className="customer-header flex items-center gap-3 px-4 py-3 bg-card border-b border-border shrink-0">
-        {!editing && (
-          <div className="customer-name min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-bold text-base leading-tight truncate">{fullName}</span>
-              {isVip && (
-                <span className="inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300 uppercase tracking-wide shrink-0">
-                  <Crown className="h-3.5 w-3.5" /> VIP
-                </span>
-              )}
-              {isBirthday && (
-                <span className="inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 border border-pink-300 shrink-0">
-                  <Cake className="h-3.5 w-3.5" /> Birthday!
-                </span>
-              )}
-              {/* Reminders — click */}
-              <Tooltip delayDuration={200}>
-                <TooltipTrigger asChild>
-                  <button type="button" onClick={() => setRemindersOpen(true)}
-                    className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-amber-100 text-amber-600 border border-amber-300 hover:bg-amber-200 transition-colors shrink-0">
-                    <Bell className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Reminders</TooltipContent>
-              </Tooltip>
-              {/* Organization — hover dropdown */}
-              <div className="relative shrink-0" onMouseEnter={orgEnter} onMouseLeave={orgLeave}>
-                <button type="button"
-                  className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-violet-100 text-violet-600 border border-violet-300 hover:bg-violet-200 transition-colors">
-                  <Building2 className="h-3.5 w-3.5" />
-                </button>
-                {orgDropdownOpen && (
-                  <div
-                    className="absolute left-0 top-full mt-2 z-50 w-80 bg-popover border border-border rounded-lg shadow-lg overflow-hidden"
-                    onMouseEnter={orgEnter} onMouseLeave={orgLeave}
-                  >
-                    <div className="px-4 py-2.5 border-b border-border flex items-center gap-2 bg-muted/40">
-                      <Building2 className="h-3.5 w-3.5 text-violet-500" />
-                      <span className="text-xs font-semibold">Organization</span>
-                    </div>
-                    <div className="p-4">
-                      <CustomerOrganization customerId={detail.id} />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
-              <span className="text-xs font-medium text-foreground">{detail.pers_nr || '—'}</span>
-              <span className="text-border">·</span>
-              <span className="flex items-center gap-0.5"><ShoppingBag className="h-3 w-3" />{detail.order_count}</span>
-              <span className="text-border">·</span>
-              <span className="flex items-center gap-0.5"><TrendingUp className="h-3 w-3" />{detail.ltv.toLocaleString('sv-SE', { maximumFractionDigits: 0 })} kr</span>
-            </div>
-          </div>
-        )}
-
-      </div>
-
       {/* ── Body ── */}
       <div className="customer-body flex flex-1 overflow-hidden">
-      <aside className={`customer-sidebar shrink-0 bg-card border-r border-border flex flex-col transition-all duration-200 ${sidebarCollapsed ? 'w-12 overflow-hidden' : 'w-64 overflow-y-auto'}`}>
-
-        {/* ── Toggle / Edit bar (always first so it's visible when collapsed) ── */}
-        <div className="customer-sidebar-actions px-2 py-1.5 flex items-center justify-between shrink-0">
-          <Tooltip delayDuration={200}>
-            <TooltipTrigger asChild>
-              <button type="button" onClick={() => { if (editing) cancelEdit(); setSidebarCollapsed(c => !c) }}
-                className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0">
-                {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">{sidebarCollapsed ? 'Show sidebar' : 'Hide sidebar'}</TooltipContent>
-          </Tooltip>
-          {!sidebarCollapsed && !editing ? (
-            <Tooltip delayDuration={200}>
-              <TooltipTrigger asChild>
-                <button type="button" onClick={startEdit}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                  <Pencil className="h-4 w-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Edit profile</TooltipContent>
-            </Tooltip>
-          ) : !sidebarCollapsed ? (
-            <div className="flex items-center gap-0.5">
-              <Tooltip delayDuration={200}>
-                <TooltipTrigger asChild>
-                  <button type="button" onClick={cancelEdit} disabled={saving}
-                    className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50">
-                    <X className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Cancel</TooltipContent>
-              </Tooltip>
-              <Tooltip delayDuration={200}>
-                <TooltipTrigger asChild>
-                  <button type="button" onClick={saveEdit} disabled={saving}
-                    className="p-1.5 rounded-md text-primary hover:bg-primary/10 transition-colors disabled:opacity-50">
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Save</TooltipContent>
-              </Tooltip>
-            </div>
-          ) : null}
-        </div>
-
-        {/* ── Name edit (edit mode) ── */}
-        {editing && form && (
-          <div className="customer-sidebar-name px-3 pt-3 pb-3 space-y-2 shrink-0">
-            <SidebarField label="First Name" value={form.first_name} onChange={v => setField('first_name', v)} />
-            <SidebarField label="Last Name"  value={form.last_name}  onChange={v => setField('last_name', v)} />
-          </div>
-        )}
+      <aside className={`customer-sidebar shrink-0 bg-card border-r border-border flex flex-col transition-all duration-200 ${sidebarCollapsed ? 'w-12 overflow-hidden' : 'w-72 overflow-y-auto'}`}>
 
         {/* ── Collapsed icon strip ── */}
-        {!editing && sidebarCollapsed && (
+        {sidebarCollapsed && (
           <div className="flex flex-col items-center gap-1 py-2">
+            <Tooltip delayDuration={200}>
+              <TooltipTrigger asChild>
+                <button type="button" onClick={() => setSidebarCollapsed(false)}
+                  className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Show sidebar</TooltipContent>
+            </Tooltip>
+            <div className="w-5 border-t border-border/40 my-0.5" />
             {([
-              { icon: Mail,     value: detail.email,          placeholder: 'No email' },
-              { icon: Phone,    value: detail.tel,             placeholder: 'No phone' },
-              { icon: MapPin,   value: fullAddress || detail.region_code, placeholder: 'No address' },
-              { icon: User,     value: detail.sex !== 'unknown' ? detail.sex : null, placeholder: 'No gender' },
-              { icon: Cake,     value: formatBirthdate(detail.birthdate), placeholder: 'No birthdate' },
-              { icon: CardIcon, value: paymentLabel && paymentLabel !== '—' ? paymentLabel : null, placeholder: 'No payment' },
-              { icon: Truck,    value: detail.delivery_method, placeholder: 'No delivery' },
-              { icon: Users,    value: detail.careof,          placeholder: 'No careof' },
-            ] as { icon: React.ElementType; value: string | null; placeholder: string }[]).map(({ icon: Icon, value, placeholder }, i) => (
+              { icon: Mail,     value: detail.email,                                         tip: detail.email || 'No email' },
+              { icon: Phone,    value: detail.tel,                                            tip: detail.tel || 'No phone' },
+              { icon: MapPin,   value: fullAddress || detail.region_code,                    tip: fullAddress || detail.region_code || 'No address' },
+              { icon: User,     value: detail.sex !== 'unknown' ? detail.sex : null,         tip: detail.sex !== 'unknown' ? detail.sex : 'No gender' },
+              { icon: Cake,     value: formatBirthdate(detail.birthdate),                    tip: formatBirthdate(detail.birthdate) || 'No birthdate' },
+              { icon: CardIcon, value: paymentLabel && paymentLabel !== '—' ? paymentLabel : null, tip: paymentLabel || 'No payment' },
+              { icon: Truck,    value: detail.delivery_method,                               tip: detail.delivery_method || 'No delivery' },
+            ] as { icon: React.ElementType; value: string | null; tip: string }[]).map(({ icon: Icon, value, tip }, i) => (
               <Tooltip key={i} delayDuration={200}>
                 <TooltipTrigger asChild>
                   <button type="button" className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted transition-colors">
-                    <Icon className={`h-5 w-5 ${value ? 'text-muted-foreground' : 'text-muted-foreground/30'}`} />
+                    <Icon className={`h-4.5 w-4.5 ${value ? 'text-muted-foreground' : 'text-muted-foreground/30'}`} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="right">{value || placeholder}</TooltipContent>
+                <TooltipContent side="right">{tip}</TooltipContent>
               </Tooltip>
             ))}
             <div className="w-5 border-t border-border/40 my-0.5" />
-            {/* Address Sync — clickable */}
             <Tooltip delayDuration={200}>
               <TooltipTrigger asChild>
                 <button type="button" onClick={() => { setPendingToggleType('sync'); setPendingToggle('sync') }}
                   className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted transition-colors">
-                  {detail.sync
-                    ? <ShieldCheck className="h-5 w-5 text-green-500" />
-                    : <ShieldX     className="h-5 w-5 text-red-500" />}
+                  {detail.sync ? <ShieldCheck className="h-4 w-4 text-green-500" /> : <ShieldX className="h-4 w-4 text-red-500" />}
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right">Address Sync — {detail.sync ? 'On' : 'Off'}</TooltipContent>
             </Tooltip>
-            {/* Credit Check — clickable */}
             <Tooltip delayDuration={200}>
               <TooltipTrigger asChild>
                 <button type="button" onClick={() => { setPendingToggleType('credit'); setPendingToggle('credit') }}
                   className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-muted transition-colors">
                   {detail.credit_check !== null && detail.credit_check > 0
-                    ? <ShieldCheck className="h-5 w-5 text-green-500" />
-                    : <ShieldX     className="h-5 w-5 text-red-500" />}
+                    ? <ShieldCheck className="h-4 w-4 text-green-500" /> : <ShieldX className="h-4 w-4 text-red-500" />}
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right">Credit Check — {detail.credit_check !== null && detail.credit_check > 0 ? 'Approved' : 'Rejected'}</TooltipContent>
@@ -617,154 +505,353 @@ export default function CustomerDetailPage() {
           </div>
         )}
 
-        {/* ── Contact rows (view) ── */}
-        {!editing && !sidebarCollapsed && (
-          <div className="customer-contact px-4 py-2 flex-1">
-            <ContactRow icon={Mail}     value={detail.email}        placeholder="No email" />
-            <ContactRow icon={Phone}    value={detail.tel}          placeholder="No phone number" />
-            <ContactRow icon={MapPin}   value={detail.region_code}  placeholder="No region" />
-            <ContactRow icon={User}     value={detail.sex !== 'unknown' ? (detail.sex.charAt(0).toUpperCase() + detail.sex.slice(1)) : null} placeholder="No gender" />
-            <ContactRow icon={Cake}     value={formatBirthdate(detail.birthdate)} placeholder="No birthdate" />
-            <ContactRow icon={CardIcon} value={paymentLabel && paymentLabel !== '—' ? paymentLabel : null} placeholder="No payment preference" />
-            <ContactRow icon={Truck}    value={detail.delivery_method} placeholder="No delivery method" accent={!!detail.delivery_method} />
-            <ContactRow icon={Users}    value={detail.careof}       placeholder="No careof" />
-
-            {/* Address section */}
-            <div className="mt-3 mb-1">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-foreground">Address</span>
-                <DropdownMenu>
+        {/* ── Expanded sidebar ── */}
+        {!sidebarCollapsed && (
+          <>
+            {/* ── Profile header ── */}
+            <div className={`shrink-0 px-4 pt-4 pb-4 border-b border-border ${isVip ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-l-4 border-l-amber-400' : ''}`}>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`font-bold text-base leading-tight ${isVip ? 'text-amber-700' : ''}`}>{fullName}</span>
+                {isVip && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 uppercase shrink-0">
+                    <Crown className="h-3 w-3" /> VIP
+                  </span>
+                )}
+                {isBirthday && (
+                  <Tooltip delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-pink-100 text-pink-600 border border-pink-200 shrink-0 cursor-default">
+                        <Cake className="h-3 w-3" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Birthday today!</TooltipContent>
+                  </Tooltip>
+                )}
+                {detail.do_not_call && (
+                  <Tooltip delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-rose-100 text-rose-600 border border-rose-200 shrink-0 cursor-default">
+                        <PhoneOff className="h-3 w-3" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Do Not Call</TooltipContent>
+                  </Tooltip>
+                )}
+                {detail.difficult_customer && (
+                  <Tooltip delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-orange-100 text-orange-600 border border-orange-200 shrink-0 cursor-default">
+                        <AlertTriangle className="h-3 w-3" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Difficult Customer</TooltipContent>
+                  </Tooltip>
+                )}
+                {blockedSsnRecord && (
+                  <Tooltip delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-rose-100 text-rose-600 border border-rose-200 shrink-0 cursor-default">
+                        <KeyRound className="h-3 w-3" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">SSN Blocked</TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                <span className="font-mono">{detail.pers_nr || '—'}</span>
+                <span className="text-border">·</span>
+                <span className="flex items-center gap-0.5"><ShoppingBag className="h-3 w-3" /> {detail.order_count}</span>
+                <span className="text-border">·</span>
+                <span className="flex items-center gap-0.5"><TrendingUp className="h-3 w-3" /> {detail.ltv.toLocaleString('sv-SE', { maximumFractionDigits: 0 })} kr</span>
+              </div>
+              {/* Action buttons */}
+              <div className="flex items-center gap-1.5 mt-2">
+                <button type="button" onClick={() => setRemindersOpen(true)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200 transition-colors text-xs font-medium shrink-0">
+                  <Bell className="h-3 w-3" /> Reminders
+                </button>
+                <DropdownMenu open={orgDropdownOpen} onOpenChange={setOrgDropdownOpen}>
                   <DropdownMenuTrigger asChild>
-                    <button className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                      <Copy className="h-3.5 w-3.5" />
+                    <button type="button"
+                      onMouseEnter={orgEnter} onMouseLeave={orgLeave}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors text-xs font-medium shrink-0">
+                      <Building2 className="h-3 w-3" /> Org
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-[190px]">
-                    <DropdownMenuItem onClick={() => navigator.clipboard.writeText(
-                      [fullName, fullAddress].filter(Boolean).join('\n')
-                    )}>
-                      Name &amp; Address
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigator.clipboard.writeText(
-                      [fullName, fullAddress, detail.tel].filter(Boolean).join('\n')
-                    )}>
-                      Name, Address &amp; Phone
-                    </DropdownMenuItem>
+                  <DropdownMenuContent
+                    side="bottom" align="start"
+                    className="w-80 p-0"
+                    onMouseEnter={orgEnter} onMouseLeave={orgLeave}
+                  >
+                    <div className="px-4 py-2.5 border-b border-border flex items-center gap-2 bg-muted/40">
+                      <Building2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs font-semibold">Organization</span>
+                    </div>
+                    <div className="p-4">
+                      <CustomerOrganization customerId={detail.id} />
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              {detail.adress || detail.post_nr || detail.ort ? (
-                <div className="flex items-start gap-2.5">
-                  <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                  <div className="text-xs leading-relaxed">
-                    {detail.adress && <div>{detail.adress}</div>}
-                    {detail.post_nr && <div>{detail.post_nr}</div>}
-                    {detail.ort    && <div>{detail.ort}</div>}
+            </div>
+
+            {/* ── Persistent action strip ── */}
+            <div className="shrink-0 flex items-center justify-end gap-1 px-4 py-2 border-border">
+              {!editing ? (
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <button type="button" onClick={startEdit}
+                      className="h-7 w-7 flex items-center justify-center rounded-full bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Edit profile</TooltipContent>
+                </Tooltip>
+              ) : (
+                <>
+                  <Tooltip delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <button type="button" onClick={cancelEdit} disabled={saving}
+                        className="h-7 w-7 flex items-center justify-center rounded-full bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Cancel</TooltipContent>
+                  </Tooltip>
+                  <Tooltip delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <button type="button" onClick={saveEdit} disabled={saving}
+                        className="h-7 w-7 flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors disabled:opacity-50">
+                        {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">Save</TooltipContent>
+                  </Tooltip>
+                </>
+              )}
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <button type="button" onClick={() => { if (editing) cancelEdit(); setSidebarCollapsed(true) }}
+                    className="h-7 w-7 flex items-center justify-center rounded-full bg-muted hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Collapse</TooltipContent>
+              </Tooltip>
+            </div>
+
+            {/* ── Edit form ── */}
+            {editing && form && (
+              <div className="customer-edit-form px-3 py-2 space-y-2 overflow-y-auto flex-1">
+                <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 pt-1">Contact</div>
+                <SidebarField label="SSN"        value={form.pers_nr}           onChange={v => setField('pers_nr', v)} mono />
+                <SidebarField label="Email"      value={form.email}             onChange={v => setField('email', v)} type="email" />
+                <SidebarField label="Alt. Email" value={form.alternative_email} onChange={v => setField('alternative_email', v)} type="email" />
+                <SidebarField label="Phone"      value={form.tel}               onChange={v => setField('tel', v)} />
+                <SidebarField label="Alt. Phone" value={form.alternative_tel}   onChange={v => setField('alternative_tel', v)} />
+
+                <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 pt-3">Personal</div>
+                <SidebarSelect label="Sex"       value={form.sex}       onChange={v => setField('sex', v)} options={SEX_OPTIONS} />
+                <SidebarField  label="Birthdate" value={form.birthdate} onChange={v => setField('birthdate', v)} />
+
+                <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 pt-3">Address</div>
+                <SidebarField label="Care of" value={form.careof}      onChange={v => setField('careof', v)} />
+                <SidebarField label="Street"  value={form.adress}      onChange={v => setField('adress', v)} />
+                <SidebarField label="Postal"  value={form.post_nr}     onChange={v => setField('post_nr', v)} />
+                <SidebarField label="City"    value={form.ort}         onChange={v => setField('ort', v)} />
+                <SidebarField label="Region"  value={form.region_code} onChange={v => setField('region_code', v)} />
+
+                <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 pt-3">Preferences</div>
+                <SidebarSelect label="Payment"  value={form.payment_preference} onChange={v => setField('payment_preference', v)} options={PAYMENT_OPTIONS} />
+                <SidebarField  label="Delivery" value={form.delivery_method}    onChange={v => setField('delivery_method', v)} />
+
+                {error && (
+                  <p className="text-xs text-destructive bg-destructive/5 rounded-lg border border-destructive/10 px-2 py-1.5 mt-2">{error}</p>
+                )}
+              </div>
+            )}
+
+            {/* ── View mode — Facebook-style info sections ── */}
+            {!editing && (
+              <div className="flex-1 divide-y divide-border/50">
+
+                {/* Contact Info */}
+                <div className="px-5 py-4">
+                  <div className="text-[11px] font-bold text-foreground mb-2">Contact Info</div>
+                  {(detail.email || detail.alternative_email) && (
+                    <div className="flex items-start gap-3 py-2">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        {detail.email && (
+                          <div>
+                            <div className="text-xs text-foreground truncate">{detail.email}</div>
+                            <div className="text-[10px] text-muted-foreground">Email</div>
+                          </div>
+                        )}
+                        {detail.alternative_email && (
+                          <div className={detail.email ? 'pt-1 border-t border-border/40' : ''}>
+                            <div className="text-xs text-foreground truncate">{detail.alternative_email}</div>
+                            <div className="text-[10px] text-muted-foreground">Alt. Email</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {(detail.tel || detail.alternative_tel) && (
+                    <div className="flex items-start gap-3 py-2">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        {detail.tel && (
+                          <div>
+                            <div className="text-xs text-foreground truncate">{detail.tel}</div>
+                            <div className="text-[10px] text-muted-foreground">Phone</div>
+                          </div>
+                        )}
+                        {detail.alternative_tel && (
+                          <div className={detail.tel ? 'pt-1 border-t border-border/40' : ''}>
+                            <div className="text-xs text-foreground truncate">{detail.alternative_tel}</div>
+                            <div className="text-[10px] text-muted-foreground">Alt. Phone</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {!detail.email && !detail.alternative_email && !detail.tel && !detail.alternative_tel && (
+                    <p className="text-xs text-muted-foreground/50 italic py-1">No contact info on file.</p>
+                  )}
+                </div>
+
+                {/* Address */}
+                <div className="px-5 py-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-[11px] font-bold text-foreground">Address</div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                          <Copy className="h-3 w-3" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-[190px]">
+                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText([fullName, fullAddress].filter(Boolean).join('\n'))}>
+                          Name &amp; Address
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText([fullName, fullAddress, detail.tel].filter(Boolean).join('\n'))}>
+                          Name, Address &amp; Phone
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  {(detail.adress || detail.ort || detail.region_code) ? (
+                    <div className="flex items-start gap-3 py-1">
+                      <div className="mt-0.5 h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0">
+                        {detail.careof  && <div className="text-sm text-foreground">c/o {detail.careof}</div>}
+                        {detail.adress  && <div className="text-sm text-foreground">{detail.adress}</div>}
+                        {(detail.post_nr || detail.ort) && (
+                          <div className="text-sm text-foreground">{[detail.post_nr, detail.ort].filter(Boolean).join(' ')}</div>
+                        )}
+                        {detail.region_code && <div className="text-[11px] text-muted-foreground">{detail.region_code}</div>}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground/50 italic py-1">No address on file.</p>
+                  )}
+                </div>
+
+                {/* Personal Info */}
+                <div className="px-5 py-4">
+                  <div className="text-[11px] font-bold text-foreground mb-2">Personal Info</div>
+                  <InfoRow
+                    icon={User}
+                    value={detail.sex !== 'unknown' && detail.sex ? detail.sex.charAt(0).toUpperCase() + detail.sex.slice(1) : null}
+                    label="Gender"
+                  />
+                  {detail.birthdate ? (
+                    <div className="flex items-center gap-3 py-2">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                        <Cake className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <div className="text-xs text-foreground">
+                          {formatBirthdate(detail.birthdate)}
+                          {calcAge(detail.birthdate) !== null && <span className="text-muted-foreground ml-1">({calcAge(detail.birthdate)})</span>}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">Birthday</div>
+                      </div>
+                    </div>
+                  ) : null}
+                  {(detail.sex === 'unknown' || !detail.sex) && !detail.birthdate && (
+                    <p className="text-xs text-muted-foreground/50 italic py-1">No personal info.</p>
+                  )}
+                </div>
+
+                {/* Preferences */}
+                <div className="px-5 py-4">
+                  <div className="text-[11px] font-bold text-foreground mb-2">Preferences</div>
+                  <InfoRow icon={CardIcon} value={paymentLabel && paymentLabel !== '—' ? paymentLabel : null} label="Payment" />
+                  <InfoRow icon={Truck}    value={detail.delivery_method} label="Delivery" />
+                  {(!paymentLabel || paymentLabel === '—') && !detail.delivery_method && (
+                    <p className="text-xs text-muted-foreground/50 italic py-1">No preferences set.</p>
+                  )}
+                </div>
+
+                {/* Account Status */}
+                <div className="px-5 py-4">
+                  <div className="text-[11px] font-bold text-foreground mb-3">Account Status</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setPendingToggleType('sync'); setPendingToggle('sync') }}
+                      className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 px-2 cursor-pointer hover:opacity-80 active:scale-95 transition-all ${
+                        detail.sync ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                      }`}
+                    >
+                      <div className={`h-7 w-7 rounded-full flex items-center justify-center ${detail.sync ? 'bg-green-500' : 'bg-red-500'}`}>
+                        {detail.sync ? <ShieldCheck className="h-4 w-4 text-white" /> : <ShieldX className="h-4 w-4 text-white" />}
+                      </div>
+                      <span className={`text-[10px] font-semibold text-center leading-tight ${detail.sync ? 'text-green-800' : 'text-red-800'}`}>
+                        Address Sync
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPendingToggleType('credit'); setPendingToggle('credit') }}
+                      className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 px-2 cursor-pointer hover:opacity-80 active:scale-95 transition-all ${
+                        detail.credit_check === null ? 'border-border bg-muted/40'
+                          : detail.credit_check > 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+                      }`}
+                    >
+                      <div className={`h-7 w-7 rounded-full flex items-center justify-center ${
+                        detail.credit_check === null ? 'bg-muted-foreground/30' : detail.credit_check > 0 ? 'bg-green-500' : 'bg-red-500'
+                      }`}>
+                        {detail.credit_check !== null && detail.credit_check > 0
+                          ? <ShieldCheck className="h-4 w-4 text-white" /> : <ShieldX className="h-4 w-4 text-white" />}
+                      </div>
+                      <span className={`text-[10px] font-semibold text-center leading-tight ${
+                        detail.credit_check === null ? 'text-muted-foreground' : detail.credit_check > 0 ? 'text-green-800' : 'text-red-800'
+                      }`}>
+                        Credit Check
+                      </span>
+                    </button>
                   </div>
                 </div>
-              ) : (
-                <div className="flex items-center gap-2.5">
-                  <MapPin className="h-4 w-4 text-muted-foreground/40 shrink-0" />
-                  <span className="text-sm text-muted-foreground/50 italic">No address</span>
-                </div>
-              )}
-            </div>
 
-            {/* Addr Sync + Credit Check cards */}
-            <div className="grid grid-cols-2 gap-2 mt-4">
-              {/* Address Sync — click to confirm + toggle */}
-              <button
-                type="button"
-                onClick={() => { setPendingToggleType('sync'); setPendingToggle('sync') }}
-                className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 px-2 w-full cursor-pointer hover:opacity-80 active:scale-95 transition-all ${
-                  detail.sync ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-                }`}
-              >
-                <div className={`h-7 w-7 rounded-full flex items-center justify-center ${
-                  detail.sync ? 'bg-green-500' : 'bg-red-500'
-                }`}>
-                  {detail.sync
-                    ? <ShieldCheck className="h-4 w-4 text-white" />
-                    : <ShieldX     className="h-4 w-4 text-white" />}
-                </div>
-                <span className={`text-[10px] font-semibold ${detail.sync ? 'text-green-800' : 'text-red-800'}`}>
-                  Address Sync
-                </span>
-              </button>
-
-              {/* Credit Check — click to confirm + toggle */}
-              <button
-                type="button"
-                onClick={() => { setPendingToggleType('credit'); setPendingToggle('credit') }}
-                className={`flex flex-col items-center gap-1.5 rounded-xl border py-3 px-2 w-full cursor-pointer hover:opacity-80 active:scale-95 transition-all ${
-                  detail.credit_check === null
-                    ? 'border-border bg-muted/40'
-                    : detail.credit_check > 0
-                      ? 'border-green-200 bg-green-50'
-                      : 'border-red-200 bg-red-50'
-                }`}
-              >
-                <div className={`h-7 w-7 rounded-full flex items-center justify-center ${
-                  detail.credit_check === null
-                    ? 'bg-muted-foreground/30'
-                    : detail.credit_check > 0 ? 'bg-green-500' : 'bg-red-500'
-                }`}>
-                  {detail.credit_check !== null && detail.credit_check > 0
-                    ? <ShieldCheck className="h-4 w-4 text-white" />
-                    : <ShieldX     className="h-4 w-4 text-white" />}
-                </div>
-                <span className={`text-[10px] font-semibold ${
-                  detail.credit_check === null ? 'text-muted-foreground'
-                  : detail.credit_check > 0 ? 'text-green-800' : 'text-red-800'
-                }`}>
-                  Credit Check
-                </span>
-              </button>
-            </div>
-
-          </div>
-        )}
-
-        {/* ── All fields (edit mode) ── */}
-        {editing && form && (
-          <div className="customer-edit-form px-3 py-2 space-y-2 overflow-y-auto flex-1">
-            <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 pt-1">Contact</div>
-            <SidebarField label="SSN"        value={form.pers_nr}           onChange={v => setField('pers_nr', v)} mono />
-            <SidebarField label="Email"      value={form.email}             onChange={v => setField('email', v)} type="email" />
-            <SidebarField label="Alt. Email" value={form.alternative_email} onChange={v => setField('alternative_email', v)} type="email" />
-            <SidebarField label="Phone"      value={form.tel}               onChange={v => setField('tel', v)} />
-            <SidebarField label="Alt. Phone" value={form.alternative_tel}   onChange={v => setField('alternative_tel', v)} />
-
-            <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 pt-3">Personal</div>
-            <SidebarSelect label="Sex"       value={form.sex}       onChange={v => setField('sex', v)} options={SEX_OPTIONS} />
-            <SidebarField  label="Birthdate" value={form.birthdate} onChange={v => setField('birthdate', v)} />
-
-            <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 pt-3">Address</div>
-            <SidebarField label="Care of" value={form.careof}      onChange={v => setField('careof', v)} />
-            <SidebarField label="Street"  value={form.adress}      onChange={v => setField('adress', v)} />
-            <SidebarField label="Postal"  value={form.post_nr}     onChange={v => setField('post_nr', v)} />
-            <SidebarField label="City"    value={form.ort}         onChange={v => setField('ort', v)} />
-            <SidebarField label="Region"  value={form.region_code} onChange={v => setField('region_code', v)} />
-
-            <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50 pt-3">Preferences</div>
-            <SidebarSelect label="Payment"  value={form.payment_preference} onChange={v => setField('payment_preference', v)} options={PAYMENT_OPTIONS} />
-            <SidebarField  label="Delivery" value={form.delivery_method}    onChange={v => setField('delivery_method', v)} />
-
-            {error && (
-              <p className="text-xs text-destructive bg-destructive/5 rounded-lg border border-destructive/10 px-2 py-1.5 mt-2">
-                {error}
-              </p>
+              </div>
             )}
-          </div>
+          </>
         )}
       </aside>
 
       <div className="customer-main flex-1 min-w-0 bg-muted/30 overflow-y-auto p-6 space-y-6">
         <CustomerOrders customerId={detail.id} />
         <CustomerSubscriptions customerId={detail.id} />
-        {insuranceOpen && (
-          <InsurancePoliciesPanel customerId={detail.id} />
-        )}
       </div>
       </div>{/* /customer-body */}
 
@@ -820,21 +907,6 @@ export default function CustomerDetailPage() {
             </div>
           </div>
         )}
-        <div className="relative group cursor-pointer">
-          <button
-            onClick={() => setInsuranceOpen(v => !v)}
-            className={`flex items-center justify-center rounded-l-xl border border-r-0 shadow-sm transition-all p-2.5 ${
-              insuranceOpen
-                ? 'bg-emerald-200 hover:bg-emerald-300 text-emerald-700 border-emerald-300'
-                : 'bg-emerald-100 hover:bg-emerald-200 active:bg-emerald-300 text-emerald-600 border-emerald-200'
-            }`}
-          >
-            <ShieldPlus className="h-5 w-5" />
-          </button>
-          <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2 py-1 rounded-md bg-popover border border-border text-foreground text-xs shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150">
-            Insurance Policies
-          </div>
-        </div>
       </div>
 
       <Dialog open={remindersOpen} onOpenChange={setRemindersOpen}>
